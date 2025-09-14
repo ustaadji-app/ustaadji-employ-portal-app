@@ -1,7 +1,7 @@
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_fonts_sizes.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
-import 'package:employee_portal/screens/profile/profile_screen.dart';
+import 'package:employee_portal/screens/auth/landing_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(seconds: 1), () {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        MaterialPageRoute(builder: (_) => AuthLandingScreen()),
         (route) => false,
       );
     });

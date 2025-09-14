@@ -5,7 +5,8 @@ class AppColors {
   static const lightBackground = Color(0xFFFFFFFF); // White (70%)
   static const lightPrimary = Color(0xFF3F51B5); // Indigo (20%)
   static const lightSecondary = Color(0xFFFF9800); // Orange Accent (10%)
-  static const lightSurface = Color(0xFFF5F5F5); // Slight grey for cards
+  static const lightSurface = Color(0xFFEEEEEE); // Slightly darker grey
+  // Stronger grey for cards & inputs
   static const lightText = Color(0xFF212121); // Black for main text
   static const lightTextSecondary = Color(0xFF616161); // Muted Grey Text
   static const error = Color(0xFFD32F2F); // Red for errors

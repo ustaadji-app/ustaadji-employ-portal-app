@@ -1,6 +1,8 @@
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/main_layout.dart';
+import 'package:employee_portal/screens/auth/register_screen.dart';
+import 'package:employee_portal/utils/custom_navigation.dart';
 import 'package:employee_portal/widgets/custom_button.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
@@ -242,7 +244,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: CustomButton(
                 text: 'Logout',
                 // onPressed: () => _handleLogout(context),
-                onPressed: () {},
+                onPressed: () {
+                  CustomNavigation.push(context, RegisterScreen());
+                },
               ),
             ),
           ],
