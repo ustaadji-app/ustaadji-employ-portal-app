@@ -136,10 +136,10 @@ class AuthLandingScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12.r),
                               ),
                               foregroundColor: Colors.white,
-                              overlayColor: MaterialStateColor.resolveWith((
+                              overlayColor: WidgetStateColor.resolveWith((
                                 states,
                               ) {
-                                if (states.contains(MaterialState.pressed)) {
+                                if (states.contains(WidgetState.pressed)) {
                                   return Colors.white24;
                                 }
                                 return Colors.transparent;

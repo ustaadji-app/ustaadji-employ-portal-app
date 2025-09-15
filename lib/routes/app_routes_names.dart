@@ -6,6 +6,7 @@ class AppRoutesNames {
   static const String login = '/login';
   static const String otp = '/otp';
   static const String register = '/register';
+  static const String pendingVerification = '/pending-verification';
   static const String home = '/home';
   static const String services = '/services';
   static const String serviceSummary = '/services-summary';

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../constants/app_colors.dart';
 
-/// Generic Text Field with optional icon
 class CustomTextField extends StatelessWidget {
   final String label;
   final IconData? icon;
   final TextInputType keyboardType;
   final TextEditingController? controller;
+  final String? Function(String?)? validator;
 
   const CustomTextField({
     super.key,
@@ -15,6 +15,7 @@ class CustomTextField extends StatelessWidget {
     this.icon,
     this.keyboardType = TextInputType.text,
     this.controller,
+    this.validator, // ✅
   });
 
   @override
@@ -31,9 +32,10 @@ class CustomTextField extends StatelessWidget {
       style: TextStyle(color: textColor),
       keyboardType: keyboardType,
       cursorColor: primary,
+      validator: validator,
       decoration: InputDecoration(
         prefixIcon: icon != null ? Icon(icon) : null,
-        prefixIconColor: MaterialStateColor.resolveWith(
+        prefixIconColor: WidgetStateColor.resolveWith(
           (states) =>
               states.contains(MaterialState.focused) ? primary : textSecondary,
         ),
@@ -62,16 +64,22 @@ class CustomTextField extends StatelessWidget {
           color: primary,
           fontWeight: FontWeight.w600,
         ),
+        errorStyle: TextStyle(
+          color: AppColors.error,
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
 }
 
-/// Custom Phone Field with 🇵🇰 +92 prefix
+/// Custom Phone Field with 🇵🇰 +92 prefix and validator
 class CustomPhoneField extends StatelessWidget {
   final TextEditingController? controller;
+  final String? Function(String?)? validator; // ✅
 
-  const CustomPhoneField({super.key, this.controller});
+  const CustomPhoneField({super.key, this.controller, this.validator});
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +95,7 @@ class CustomPhoneField extends StatelessWidget {
       style: TextStyle(color: textColor),
       keyboardType: TextInputType.phone,
       cursorColor: primary,
+      validator: validator, // ✅
       decoration: InputDecoration(
         prefixIcon: SizedBox(
           width: 80.w,
@@ -130,6 +139,11 @@ class CustomPhoneField extends StatelessWidget {
         floatingLabelStyle: TextStyle(
           color: primary,
           fontWeight: FontWeight.w600,
+        ),
+        errorStyle: TextStyle(
+          color: AppColors.error,
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
