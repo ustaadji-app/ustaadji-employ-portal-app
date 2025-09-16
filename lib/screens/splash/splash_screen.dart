@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:employee_portal/screens/internet/no_internet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:provider/provider.dart';
-
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_fonts_sizes.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
@@ -11,6 +12,7 @@ import 'package:employee_portal/screens/auth/pending_verification.dart';
 import 'package:employee_portal/screens/home/home_screen.dart';
 import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/utils/storage_helper.dart';
+import 'package:employee_portal/services/api_services.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,6 +29,8 @@ class _SplashScreenState extends State<SplashScreen>
   final String _text = "Ustaad Ji";
   String _displayedText = "";
   int _currentIndex = 0;
+
+  final ApiService apiService = ApiService();
 
   @override
   void initState() {
@@ -54,48 +58,110 @@ class _SplashScreenState extends State<SplashScreen>
         });
       } else {
         timer.cancel();
-        _navigateNext(); // Typing complete → Navigate next
+        _checkNetworkAndProceed();
       }
     });
   }
 
-  Future<void> _navigateNext() async {
+  Future<void> _checkNetworkAndProceed() async {
+    final hasInternet = await InternetConnectionChecker().hasConnection;
+
+    if (!hasInternet) {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const NoInternetScreen()),
+      );
+    } else {
+      _checkTokenAndNavigate();
+    }
+  }
+
+  Future<void> _checkTokenAndNavigate() async {
     final token = await StorageHelper.getToken();
     final user = await StorageHelper.getUser();
 
     if (!mounted) return;
 
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (token != null && token.isNotEmpty && user.isNotEmpty) {
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
+    if (token != null && token.isNotEmpty && user.isNotEmpty) {
+      try {
+        final result = await apiService.getRequest(
+          endpoint: "provider/details",
+          token: token,
+        );
 
-        // ✅ Set structured data in Provider (same as OTP screen)
-        userProvider.setUser(user);
+        if (!mounted) return;
 
-        final provider = user['provider'] ?? {};
-        if (provider['is_active'] == 1) {
+        if (result['success'] == true) {
+          final data = result['data'] as Map<String, dynamic>?;
+
+          if (data != null && data['provider'] != null) {
+            final userProvider = Provider.of<UserProvider>(
+              context,
+              listen: false,
+            );
+
+            final provider = data['provider'] as Map<String, dynamic>;
+            final subscription =
+                data['subscription'] as Map<String, dynamic>? ?? {};
+            final accessToken = data['access_token'] as String? ?? token;
+
+            await StorageHelper.saveToken(accessToken);
+
+            final userData = {
+              "provider": provider,
+              "subscription": subscription,
+            };
+
+            await StorageHelper.saveUser(userData);
+
+            userProvider.setUser(userData);
+
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            if (provider['is_active'] == 1) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (route) => false,
+              );
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PendingVerificationScreen(),
+                ),
+                (route) => false,
+              );
+            }
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+              (route) => false,
+            );
+          }
+        } else {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-          );
-        } else if (provider['is_active'] == 0) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const PendingVerificationScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
             (route) => false,
           );
         }
-      } else {
+      } catch (e) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
           (route) => false,
         );
       }
-    });
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override
