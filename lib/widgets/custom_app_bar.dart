@@ -1,4 +1,5 @@
 import 'package:employee_portal/constants/app_colors.dart';
+import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/themes/theme_provider.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
@@ -24,19 +25,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    // final user = Provider.of<UserProvider>(context).user;
-    // final name = user['name'] ?? "";
+    final userProvider = Provider.of<UserProvider>(context);
+    final provider = userProvider.user['provider'] ?? {};
+
     final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
     final themeIcon = isDarkMode ? Icons.dark_mode : Icons.light_mode;
 
-    final Map<String, dynamic> user = {
-      'name': 'Zara Khan',
-      'email': 'zara.khan@example.com',
-      'avatarUrl': '',
-    };
     final String firstLetter =
-        user['name'] != null && user['name'].toString().isNotEmpty
-            ? user['name'].toString().trim().split(' ')[0][0].toUpperCase()
+        provider['name'] != null && provider['name'].toString().isNotEmpty
+            ? provider['name'].toString().trim().split(' ')[0][0].toUpperCase()
             : '';
 
     return AppBar(
@@ -70,12 +67,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (!isAvatarShow)
-            (user['avatarUrl'] != null &&
-                    user['avatarUrl'].toString().isNotEmpty
+            (provider['avatarUrl'] != null &&
+                    provider['avatarUrl'].toString().isNotEmpty
                 ? Padding(
                   padding: EdgeInsets.only(right: 8.w),
                   child: CircleAvatar(
-                    backgroundImage: NetworkImage(user['avatarUrl'].toString()),
+                    backgroundImage: NetworkImage(
+                      provider['avatarUrl'].toString(),
+                    ),
                     radius: 16.r,
                   ),
                 )
@@ -104,7 +103,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        if (user.isEmpty)
+        if (provider.isEmpty)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.w),
             child: InkWell(
@@ -190,28 +189,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
 
               // Avatar
-              Padding(
-                padding: EdgeInsets.only(right: 8.w),
-                child:
-                    (user['avatarUrl'] != null &&
-                            user['avatarUrl'].toString().isNotEmpty)
-                        ? CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            user['avatarUrl'].toString(),
-                          ),
-                          radius: 16.r,
-                        )
-                        : CircleAvatar(
-                          radius: 16.r,
-                          backgroundColor: AppColors.lightPrimary,
-                          child: CustomText(
-                            text: firstLetter,
-                            size: CustomTextSize.lg,
-                            fontWeight: FontWeight.bold,
-                            color: CustomTextColor.alwaysWhite,
-                          ),
-                        ),
-              ),
+              // Padding(
+              //   padding: EdgeInsets.only(right: 8.w),
+              //   child:
+              //       (provider['avatarUrl'] != null &&
+              //               provider['avatarUrl'].toString().isNotEmpty)
+              //           ? CircleAvatar(
+              //             backgroundImage: NetworkImage(
+              //               provider['avatarUrl'].toString(),
+              //             ),
+              //             radius: 16.r,
+              //           )
+              //           : CircleAvatar(
+              //             radius: 16.r,
+              //             backgroundColor: AppColors.lightPrimary,
+              //             child: CustomText(
+              //               text: firstLetter,
+              //               size: CustomTextSize.lg,
+              //               fontWeight: FontWeight.bold,
+              //               color: CustomTextColor.alwaysWhite,
+              //             ),
+              //           ),
+              // ),
             ],
           ),
         ],

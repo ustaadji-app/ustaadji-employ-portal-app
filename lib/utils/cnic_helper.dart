@@ -17,9 +17,6 @@ class CnicScannerHelper {
     'DATE OF BIRTH',
   ];
 
-  // back side target keyword
-  static const String _backMainKeyword = 'Registrar General of Pakistan';
-
   static Future<File?> scanCnic(BuildContext context, CnicSide side) async {
     try {
       // 1) Camera permission
@@ -51,35 +48,25 @@ class CnicScannerHelper {
       // 4) Normalize text
       final normText = _normalizeForMatch(rawText);
 
-      bool hasKeyword = false;
+      bool isValid = false;
 
       if (side == CnicSide.front) {
-        // ✅ Front: simple contains check
+        // Front: check for front keywords
         for (final k in _frontKeywords) {
           final nk = _normalizeForMatch(k);
           if (nk.isNotEmpty && normText.contains(nk)) {
-            hasKeyword = true;
+            isValid = true;
             break;
           }
         }
       } else {
-        // ✅ Back: fuzzy match ONLY with "Registrar General of Pakistan"
-        final target = _normalizeForMatch(_backMainKeyword);
-
-        // har line separately check karo
-        final lines = normText.split('\n');
-        for (final line in lines) {
-          final score = _similar(line, target);
-          debugPrint("🔍 Back line: '$line' → score $score");
-          if (score > 0.65) {
-            // threshold adjust kar sakte ho
-            hasKeyword = true;
-            break;
-          }
+        // Back: just check if OCR detected some text
+        if (normText.isNotEmpty) {
+          isValid = true;
         }
       }
 
-      if (!hasKeyword) {
+      if (!isValid) {
         _showSnack(
           context,
           side == CnicSide.front
@@ -103,50 +90,16 @@ class CnicScannerHelper {
     final recognizer = TextRecognizer();
     final recognized = await recognizer.processImage(inputImage);
     await recognizer.close();
-    return recognized.text ?? '';
+    return recognized.text;
   }
 
-  /// normalize
+  /// Normalize
   static String _normalizeForMatch(String s) {
     if (s.isEmpty) return '';
     s = s.replaceAll('\u200C', '').replaceAll('\u200D', '');
     s = s.replaceAll(RegExp(r'[^\w\s]', unicode: true), ' ');
     s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
     return s.toLowerCase();
-  }
-
-  /// similarity (Levenshtein)
-  static double _similar(String a, String b) {
-    if (a.isEmpty || b.isEmpty) return 0.0;
-    final dist = _levenshtein(a, b);
-    final maxLen = a.length > b.length ? a.length : b.length;
-    return 1.0 - (dist / maxLen);
-  }
-
-  static int _levenshtein(String s, String t) {
-    if (s == t) return 0;
-    if (s.isEmpty) return t.length;
-    if (t.isEmpty) return s.length;
-
-    final m = List.generate(
-      s.length + 1,
-      (_) => List<int>.filled(t.length + 1, 0),
-    );
-
-    for (int i = 0; i <= s.length; i++) m[i][0] = i;
-    for (int j = 0; j <= t.length; j++) m[0][j] = j;
-
-    for (int i = 1; i <= s.length; i++) {
-      for (int j = 1; j <= t.length; j++) {
-        final cost = s[i - 1] == t[j - 1] ? 0 : 1;
-        m[i][j] = [
-          m[i - 1][j] + 1,
-          m[i][j - 1] + 1,
-          m[i - 1][j - 1] + cost,
-        ].reduce((a, b) => a < b ? a : b);
-      }
-    }
-    return m[s.length][t.length];
   }
 
   static void _showSnack(BuildContext ctx, String msg) {

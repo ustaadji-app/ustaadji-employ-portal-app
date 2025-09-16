@@ -2,6 +2,7 @@ import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_fonts_sizes.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/main_layout.dart';
+import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/screens/messages/chat_screen.dart';
 import 'package:employee_portal/utils/custom_navigation.dart';
 import 'package:employee_portal/widgets/custom_button.dart';
@@ -9,6 +10,7 @@ import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -18,6 +20,9 @@ class HomeScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final date = DateFormat("EEEE, dd MMMM yyyy").format(DateTime.now());
+    final userProvider = Provider.of<UserProvider>(context);
+    final provider = userProvider.user['provider'] ?? {};
+    final subscription = userProvider.user['subscription'] ?? {};
 
     return MainLayout(
       title: "Home",
@@ -49,16 +54,38 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 28.r,
-                      backgroundImage: AssetImage(
-                        "assets/images/hero_image.jpg",
-                      ),
+                      backgroundColor:
+                          isDark
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary,
+                      backgroundImage:
+                          (provider?['avatarUrl'] != null &&
+                                  (provider?['avatarUrl'] as String).isNotEmpty)
+                              ? NetworkImage(provider?['avatarUrl'])
+                              : null,
+                      child:
+                          (provider?['avatarUrl'] == null ||
+                                  (provider?['avatarUrl'] as String).isEmpty)
+                              ? Text(
+                                provider?['name'] != null &&
+                                        (provider?['name'] as String).isNotEmpty
+                                    ? (provider!['name'] as String)[0]
+                                        .toUpperCase()
+                                    : '',
+                                style: TextStyle(
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : null,
                     ),
                     AppSpacing.hmd,
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CustomText(
-                          text: "Welcome back, Zain!",
+                          text: provider?['name'] ?? '',
                           size: CustomTextSize.lg,
                           fontWeight: FontWeight.bold,
                           color: CustomTextColor.text,
@@ -72,14 +99,14 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+
                 AppSpacing.vmd,
 
-                // Job Stats Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildStat("Total Jobs", "30", textColor),
-                    _buildStat("Completed", "19", textColor),
+                    _buildStat("Completed", "20", textColor),
                     _buildStat("Pending", "3", textColor),
                     _buildStat("Cancelled", "2", textColor),
                   ],

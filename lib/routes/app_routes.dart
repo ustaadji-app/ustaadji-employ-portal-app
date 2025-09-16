@@ -1,7 +1,6 @@
 import 'package:employee_portal/routes/app_routes_names.dart';
 import 'package:employee_portal/screens/auth/landing_screen.dart';
 import 'package:employee_portal/screens/auth/login_screen.dart';
-import 'package:employee_portal/screens/auth/otp_screen.dart';
 import 'package:employee_portal/screens/auth/pending_verification.dart';
 import 'package:employee_portal/screens/auth/register_screen.dart';
 import 'package:employee_portal/screens/home/home_screen.dart';
@@ -20,7 +19,6 @@ class AppRoutes {
     AppRoutesNames.register: (context) => RegisterScreen(),
     AppRoutesNames.login: (context) => LoginScreen(),
     AppRoutesNames.landing: (context) => AuthLandingScreen(),
-    AppRoutesNames.otp: (context) => OtpVerificationScreen(),
     AppRoutesNames.home: (context) => const HomeScreen(),
     AppRoutesNames.pendingVerification:
         (context) => PendingVerificationScreen(),

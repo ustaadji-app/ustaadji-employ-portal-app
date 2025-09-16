@@ -22,8 +22,8 @@ class AuthLayout extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.md.w,
-            vertical: AppSpacing.md.h,
+            horizontal: AppSpacing.sm.w,
+            vertical: AppSpacing.sm.h,
           ),
           child: body,
         ),

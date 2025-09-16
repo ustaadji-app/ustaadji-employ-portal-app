@@ -1,10 +1,16 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_fonts_sizes.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/screens/auth/landing_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
+import 'package:employee_portal/screens/auth/pending_verification.dart';
+import 'package:employee_portal/screens/home/home_screen.dart';
+import 'package:employee_portal/provider/user_provider.dart';
+import 'package:employee_portal/utils/storage_helper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,7 +42,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _fadeController.forward();
 
-    // Start typing animation after 1 second
     Future.delayed(const Duration(seconds: 1), _startTyping);
   }
 
@@ -55,44 +60,43 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateNext() async {
-    Future.delayed(const Duration(seconds: 1), () {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => AuthLandingScreen()),
-        (route) => false,
-      );
+    final token = await StorageHelper.getToken();
+    final user = await StorageHelper.getUser();
+
+    if (!mounted) return;
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (token != null && token.isNotEmpty && user.isNotEmpty) {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+        // ✅ Set structured data in Provider (same as OTP screen)
+        userProvider.setUser(user);
+
+        final provider = user['provider'] ?? {};
+        if (provider['is_active'] == 1) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        } else if (provider['is_active'] == 0) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const PendingVerificationScreen(),
+            ),
+            (route) => false,
+          );
+        }
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+          (route) => false,
+        );
+      }
     });
   }
-
-  // Future<void> _navigateNext() async {
-  //   final user = await StorageHelper.getUser();
-
-  //   if (!mounted) return;
-
-  //   print(user);
-
-  //   if (user.isNotEmpty) {
-  //     // Set user in Provider
-  //     final userProvider = Provider.of<UserProvider>(context, listen: false);
-  //     userProvider.setUser(
-  //       user.map((key, value) => MapEntry(key, value.toString())),
-  //     );
-
-  //     Future.delayed(const Duration(seconds: 1));
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const HomeScreen()),
-  //       (route) => false,
-  //     );
-  //   } else {
-  //     Future.delayed(const Duration(seconds: 1));
-  //     Navigator.pushAndRemoveUntil(
-  //       context,
-  //       MaterialPageRoute(builder: (_) => const CreateProfileScreen()),
-  //       (route) => false,
-  //     );
-  //   }
-  // }
 
   @override
   void dispose() {

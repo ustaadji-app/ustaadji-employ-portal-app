@@ -1,7 +1,6 @@
 import 'dart:io';
 
 class RegisterModel {
-  // Personal Info
   final String name;
   final String phoneNumber;
   final String cnicNumber;
@@ -23,7 +22,7 @@ class RegisterModel {
 
   // Optional / Additional
   final File? paymentImage;
-  final String? serviceId;
+  final int? serviceId;
 
   RegisterModel({
     required this.name,
@@ -42,40 +41,30 @@ class RegisterModel {
     required this.gAddress,
     required this.gBillFrontImage,
     required this.gBillBackImage,
-    this.paymentImage,
-    this.serviceId,
+    required this.paymentImage,
+    required this.serviceId,
   });
 
   Map<String, dynamic> toJson() {
     return {
       "name": name,
-      "phone_number": phoneNumber,
+      "phone_number": "+92$phoneNumber",
       "cnic_number": cnicNumber,
+      "cnic_front_image": cnicFrontImage.path,
+      "cnic_back_image": cnicBackImage.path,
       "address": address,
+      "bill_front_image": billFrontImage.path,
+      "bill_back_image": billBackImage.path,
       "g_name": gName,
-      "g_phone_number": gPhoneNumber,
+      "g_phone_number": "+92$gPhoneNumber",
       "g_cnic_number": gCnicNumber,
+      "g_cnic_front_image": gCnicFrontImage.path,
+      "g_cnic_back_image": gCnicBackImage.path,
       "g_address": gAddress,
+      "g_bill_front_image": gBillFrontImage.path,
+      "g_bill_back_image": gBillBackImage.path,
+      "payment_image": paymentImage?.path,
       "service_id": serviceId,
     };
-  }
-
-  Map<String, File> filesToMap() {
-    final map = {
-      "cnic_front_image": cnicFrontImage,
-      "cnic_back_image": cnicBackImage,
-      "bill_front_image": billFrontImage,
-      "bill_back_image": billBackImage,
-      "g_cnic_front_image": gCnicFrontImage,
-      "g_cnic_back_image": gCnicBackImage,
-      "g_bill_front_image": gBillFrontImage,
-      "g_bill_back_image": gBillBackImage,
-    };
-
-    if (paymentImage != null) {
-      map["payment_image"] = paymentImage!;
-    }
-
-    return map;
   }
 }

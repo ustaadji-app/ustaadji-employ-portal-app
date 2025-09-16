@@ -1,12 +1,15 @@
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/main_layout.dart';
-import 'package:employee_portal/screens/auth/register_screen.dart';
-import 'package:employee_portal/utils/custom_navigation.dart';
+import 'package:employee_portal/provider/user_provider.dart';
+import 'package:employee_portal/screens/auth/landing_screen.dart';
+import 'package:employee_portal/utils/storage_helper.dart';
 import 'package:employee_portal/widgets/custom_button.dart';
+import 'package:employee_portal/widgets/custom_full_screen_loader.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,25 +19,20 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool isLoading = false;
+
   @override
   Widget build(BuildContext context) {
-    // final user = Provider.of<UserProvider>(context).user;
-    final Map<String, dynamic> user = {
-      'avatarUrl': '',
-      'name': 'Ali Khan',
-      'phone_number': '+92 300 1234567',
-      'email': 'ali.khan@example.com',
-      'address': '123, Gulshan-e-Iqbal, Karachi',
-      'created_at': '2023-08-21T14:35:00Z',
-    };
+    final userProvider = Provider.of<UserProvider>(context);
+    final provider = userProvider.user['provider'] ?? {};
+    // final subscription = userProvider.user['subscription'] ?? {};
 
-    print(user);
-    final String avatarUrl = user['avatarUrl'] ?? '';
-    final String fullName = user['name'] ?? "";
-    final String phoneNumber = user['phone_number'] ?? "";
-    final String mail = user['email'] ?? "";
-    final String address = user['address'] ?? "";
-    final rawCreatedAt = user['created_at'] ?? "";
+    final String avatarUrl = provider['avatarUrl'] ?? '';
+    final String fullName = provider['name'] ?? "";
+    final String phoneNumber = provider['phone_number'] ?? "";
+    final String address = provider['address'] ?? "";
+    final String cnicNumber = provider['cnic_number'] ?? "";
+    final rawCreatedAt = provider['created_at'] ?? "";
     String createdAt = "";
 
     if (rawCreatedAt.isNotEmpty) {
@@ -117,6 +115,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     //   }
     // }
 
+    Future<void> handleLogout() async {
+      setState(() => isLoading = true);
+
+      try {
+        // ✅ Clear all saved data
+        await StorageHelper.clearAll();
+
+        if (!mounted) return;
+        setState(() => isLoading = false);
+
+        // ✅ Navigate user to LoginScreen
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Logout error: $e")));
+      }
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkSurface : AppColors.lightSurface;
     final primaryColor =
@@ -129,129 +152,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final bool hasAvatar = avatarUrl.length > 3;
 
-    return MainLayout(
-      title: 'Profile',
-      currentIndex: 4,
-      isSidebarEnabled: true,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Stack(
+    return Stack(
+      children: [
+        MainLayout(
+          title: 'Profile',
+          currentIndex: 4,
+          isSidebarEnabled: true,
+          body: SingleChildScrollView(
+            child: Column(
               children: [
-                CircleAvatar(
-                  radius: 50.r,
-                  backgroundColor:
-                      hasAvatar ? Colors.transparent : primaryColor,
-                  backgroundImage: hasAvatar ? NetworkImage(avatarUrl) : null,
-                  child:
-                      !hasAvatar
-                          ? CustomText(
-                            text: firstLetter,
-                            size: CustomTextSize.xxxl,
-                            fontWeight: FontWeight.bold,
-                            color: CustomTextColor.alwaysWhite,
-                          )
-                          : null,
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 4.w,
-                  child: InkWell(
-                    onTap: () {},
-                    borderRadius: BorderRadius.circular(30.r),
-                    child: Container(
-                      padding: EdgeInsets.all(5.r),
-                      decoration: BoxDecoration(
-                        color: primaryColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black26, blurRadius: 4.r),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.edit,
-                        color:
-                            isDark
-                                ? AppColors.darkBackground
-                                : AppColors.lightBackground,
-                        size: 20.sp,
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50.r,
+                      backgroundColor:
+                          hasAvatar ? Colors.transparent : primaryColor,
+                      backgroundImage:
+                          hasAvatar ? NetworkImage(avatarUrl) : null,
+                      child:
+                          !hasAvatar
+                              ? CustomText(
+                                text: firstLetter,
+                                size: CustomTextSize.xxxl,
+                                fontWeight: FontWeight.bold,
+                                color: CustomTextColor.alwaysWhite,
+                              )
+                              : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 4.w,
+                      child: InkWell(
+                        onTap: () {},
+                        borderRadius: BorderRadius.circular(30.r),
+                        child: Container(
+                          padding: EdgeInsets.all(5.r),
+                          decoration: BoxDecoration(
+                            color: primaryColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(color: Colors.black26, blurRadius: 4.r),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            color:
+                                isDark
+                                    ? AppColors.darkBackground
+                                    : AppColors.lightBackground,
+                            size: 20.sp,
+                          ),
+                        ),
                       ),
                     ),
+                  ],
+                ),
+                AppSpacing.vlg,
+                CustomText(
+                  text: fullName,
+                  size: CustomTextSize.xl,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: "Poppins",
+                  color: CustomTextColor.text,
+                ),
+                AppSpacing.vmd,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildInfoChip(
+                      Icons.calendar_today,
+                      'Joined: $createdAt',
+                      primaryColor,
+                      CustomTextColor.textSecondary,
+                    ),
+                  ],
+                ),
+                AppSpacing.vlg,
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    vertical: 20.h,
+                    horizontal: 24.w,
                   ),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(10.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark ? Colors.black54 : Colors.grey.shade200,
+                        blurRadius: 6.r,
+                        offset: Offset(0, 2.h),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow(
+                        Icons.phone_outlined,
+                        phoneNumber,
+                        CustomTextColor.textSecondary,
+                      ),
+                      Divider(height: 32.h, color: Colors.grey),
+                      _buildDetailRow(
+                        Icons.credit_card_outlined,
+                        cnicNumber,
+                        CustomTextColor.textSecondary,
+                      ),
+                      Divider(height: 32.h, color: Colors.grey),
+                      _buildDetailRow(
+                        Icons.location_on_outlined,
+                        address,
+                        CustomTextColor.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+                AppSpacing.vlg,
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(text: 'Logout', onPressed: handleLogout),
                 ),
               ],
             ),
-            AppSpacing.vlg,
-            CustomText(
-              text: fullName,
-              size: CustomTextSize.xl,
-              fontWeight: FontWeight.w600,
-              fontFamily: "Poppins",
-              color: CustomTextColor.text,
-            ),
-            AppSpacing.vmd,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildInfoChip(
-                  Icons.calendar_today,
-                  'Joined: $createdAt',
-                  primaryColor,
-                  CustomTextColor.textSecondary,
-                ),
-              ],
-            ),
-            AppSpacing.vlg,
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 24.w),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(10.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark ? Colors.black54 : Colors.grey.shade200,
-                    blurRadius: 6.r,
-                    offset: Offset(0, 2.h),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  _buildDetailRow(
-                    Icons.phone_outlined,
-                    phoneNumber,
-                    CustomTextColor.textSecondary,
-                  ),
-                  Divider(height: 32.h, color: Colors.grey),
-                  _buildDetailRow(
-                    Icons.mail_outline,
-                    mail,
-                    CustomTextColor.textSecondary,
-                  ),
-                  Divider(height: 32.h, color: Colors.grey),
-                  _buildDetailRow(
-                    Icons.location_on_outlined,
-                    address,
-                    CustomTextColor.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-            AppSpacing.vlg,
-            SizedBox(
-              width: double.infinity,
-              child: CustomButton(
-                text: 'Logout',
-                // onPressed: () => _handleLogout(context),
-                onPressed: () {
-                  CustomNavigation.push(context, RegisterScreen());
-                },
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        if (isLoading) const FullScreenLoader(),
+      ],
     );
   }
 

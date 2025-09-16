@@ -27,7 +27,6 @@ class BillScannerHelper {
     'WWW.KE.COM.PK',
   ];
 
-  // Unique keywords for better validation
   static const List<String> _frontUnique = [
     'USER NAME',
     'AMOUNT DUE',

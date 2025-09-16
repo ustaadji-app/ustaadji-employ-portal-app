@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/auth_layout.dart';
+import 'package:employee_portal/models/register_model.dart';
+import 'package:employee_portal/screens/auth/pending_verification.dart';
+import 'package:employee_portal/services/register_service.dart';
 import 'package:employee_portal/utils/cnic_helper.dart';
 import 'package:employee_portal/utils/bill_helper.dart';
 import 'package:employee_portal/utils/image_picker_helper.dart';
@@ -23,15 +26,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? selectedCategory;
 
   // Controllers
-  final _fullNameController = TextEditingController();
-  final _cnicController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _fullNameController = TextEditingController(text: "Muhammad Zain");
+  final _cnicController = TextEditingController(text: "1234567891023");
+  final _phoneController = TextEditingController(text: "3281447811");
+  final _addressController = TextEditingController(text: "Karachi");
 
-  final _gNameController = TextEditingController();
-  final _gCnicController = TextEditingController();
-  final _gPhoneController = TextEditingController();
-  final _gAddressController = TextEditingController();
+  final _gNameController = TextEditingController(text: "Muhammad Ahmed");
+  final _gCnicController = TextEditingController(text: "1234567891023");
+  final _gPhoneController = TextEditingController(text: "32814478123");
+  final _gAddressController = TextEditingController(text: "Karachi");
 
   // Files
   File? _cnicFront, _cnicBack, _billFront, _billBack;
@@ -53,128 +56,110 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Form Key
   final _formKey = GlobalKey<FormState>();
 
-  void _nextStep() {
-    // TEMPORARILY DISABLED VALIDATIONS FOR QUICK TESTING
-    // bool isValid = _formKey.currentState?.validate() ?? false;
-    // bool imagesValid = true;
+  void _nextStep() async {
+    bool isValid = _formKey.currentState?.validate() ?? false;
+    bool imagesValid = true;
 
-    // if (_currentStep == 0) {
-    //   setState(() {
-    //     _cnicFrontError = _cnicFront == null;
-    //     _cnicBackError = _cnicBack == null;
-    //     _billFrontError = _billFront == null;
-    //     _billBackError = _billBack == null;
-    //   });
-    //   imagesValid =
-    //       !_cnicFrontError &&
-    //       !_cnicBackError &&
-    //       !_billFrontError &&
-    //       !_billBackError;
-    // }
+    if (_currentStep == 0) {
+      setState(() {
+        _cnicFrontError = _cnicFront == null;
+        _cnicBackError = _cnicBack == null;
+        _billFrontError = _billFront == null;
+        _billBackError = _billBack == null;
+      });
+      imagesValid =
+          !_cnicFrontError &&
+          !_cnicBackError &&
+          !_billFrontError &&
+          !_billBackError;
 
-    // if (_currentStep == 1) {
-    //   setState(() {
-    //     _gCnicFrontError = _gCnicFront == null;
-    //     _gCnicBackError = _gCnicBack == null;
-    //     _gBillFrontError = _gBillFront == null;
-    //     _gBillBackError = _gBillBack == null;
-    //   });
-    //   imagesValid =
-    //       !_gCnicFrontError &&
-    //       !_gCnicBackError &&
-    //       !_gBillFrontError &&
-    //       !_gBillBackError;
-    // }
+      if (!isValid || !imagesValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Fill all fields and upload all documents"),
+          ),
+        );
+        return;
+      }
+    }
 
-    // Step 3: category validation
-    // if (_currentStep == 2) {
-    //   if (selectedCategory == null) {
-    //     imagesValid = false;
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(
-    //         content: Text("Please select a category before Next."),
-    //       ),
-    //     );
-    //   }
-    // }
+    // // Step 2: Guarantor Info
+    if (_currentStep == 1) {
+      setState(() {
+        _gCnicFrontError = _gCnicFront == null;
+        _gCnicBackError = _gCnicBack == null;
+        _gBillFrontError = _gBillFront == null;
+        _gBillBackError = _gBillBack == null;
+      });
+      imagesValid =
+          !_gCnicFrontError &&
+          !_gCnicBackError &&
+          !_gBillFrontError &&
+          !_gBillBackError;
 
-    // Directly move to next step without validation
+      if (!isValid || !imagesValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Fill all guarantor fields and upload all docs"),
+          ),
+        );
+        return;
+      }
+    }
 
-    // if (_currentStep == 3) {
-    //   if (paymentImages.isEmpty) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(
-    //         content: Text("Please select at least one payment screenshot."),
-    //       ),
-    //     );
-    //     return; // Stop user from moving forward
-    //   }
-    // }
+    // // Step 3: Category
+    if (_currentStep == 2) {
+      if (selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please select a category")),
+        );
+        return;
+      }
+    }
 
-    // if (_currentStep < 3) {
-    //   setState(() => _currentStep++);
-    // } else {
-    //   Navigator.pushReplacementNamed(context, "/profile");
-    // }
-
-    // ORIGINAL ERROR MESSAGE (COMMENTED)
-    // else if (_currentStep != 2) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text(
-    //         "Please fill all required fields and upload all images.",
-    //       ),
-    //     ),
-    //   );
-    // }
-
+    // Step 4: Payment Proof
     if (_currentStep == 3) {
       if (paymentImages.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Please select at least one payment screenshot."),
+            content: Text("Please upload at least one payment screenshot"),
           ),
         );
         return;
       }
 
-      // ✅ PRINT ALL DATA ON SUBMIT
-      print("=== Personal Information ===");
-      print("Full Name: ${_fullNameController.text}");
-      print("CNIC: ${_cnicController.text}");
-      print("Phone: ${_phoneController.text}");
-      print("Address: ${_addressController.text}");
-      print("CNIC Front: ${_cnicFront?.path ?? 'Not uploaded'}");
-      print("CNIC Back: ${_cnicBack?.path ?? 'Not uploaded'}");
-      print("Bill Front: ${_billFront?.path ?? 'Not uploaded'}");
-      print("Bill Back: ${_billBack?.path ?? 'Not uploaded'}");
+      final registerData = RegisterModel(
+        name: _fullNameController.text,
+        phoneNumber: _phoneController.text,
+        cnicNumber: _cnicController.text,
+        cnicFrontImage: _cnicFront!,
+        cnicBackImage: _cnicBack!,
+        address: _addressController.text,
+        billFrontImage: _billFront!,
+        billBackImage: _billBack!,
+        gName: _gNameController.text,
+        gPhoneNumber: _gPhoneController.text,
+        gCnicNumber: _gCnicController.text,
+        gCnicFrontImage: _gCnicFront!,
+        gCnicBackImage: _gCnicBack!,
+        gAddress: _gAddressController.text,
+        gBillFrontImage: _gBillFront!,
+        gBillBackImage: _gBillBack!,
+        paymentImage: paymentImages.first,
+        serviceId: 1,
+      );
 
-      print("\n=== Guarantor Details ===");
-      print("G Name: ${_gNameController.text}");
-      print("G CNIC: ${_gCnicController.text}");
-      print("G Phone: ${_gPhoneController.text}");
-      print("G Address: ${_gAddressController.text}");
-      print("G CNIC Front: ${_gCnicFront?.path ?? 'Not uploaded'}");
-      print("G CNIC Back: ${_gCnicBack?.path ?? 'Not uploaded'}");
-      print("G Bill Front: ${_gBillFront?.path ?? 'Not uploaded'}");
-      print("G Bill Back: ${_gBillBack?.path ?? 'Not uploaded'}");
+      await submitRegister(registerData);
 
-      print("\n=== Selected Category ===");
-      print("Category: $selectedCategory");
-
-      print("\n=== Payment Screenshots ===");
-      for (int i = 0; i < paymentImages.length; i++) {
-        print("Payment ${i + 1}: ${paymentImages[i].path}");
-      }
-
-      // After printing, you can navigate or submit to API
-      Navigator.pushReplacementNamed(context, "/profile");
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => PendingVerificationScreen()),
+        (Route<dynamic> route) => false,
+      );
       return;
     }
 
-    if (_currentStep < 3) {
-      setState(() => _currentStep++);
-    }
+    if (_currentStep < 3) setState(() => _currentStep++);
   }
 
   void _prevStep() {
