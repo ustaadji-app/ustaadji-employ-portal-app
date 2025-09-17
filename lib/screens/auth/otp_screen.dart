@@ -96,15 +96,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           );
 
           final provider = data['provider'] as Map<String, dynamic>;
-          final subscription =
-              data['subscription'] as Map<String, dynamic>? ?? {};
+          final subscriptions = data['subscriptions'] as List<dynamic>? ?? [];
           final token = data['access_token'] as String;
 
           // ✅ Save token in SecureStorage
           await StorageHelper.saveToken(token);
 
           // ✅ Combine provider + subscription
-          final userData = {"provider": provider, "subscription": subscription};
+          final userData = {
+            "provider": provider,
+            "subscriptions": subscriptions,
+          };
 
           // ✅ Save user in SharedPreferences
           await StorageHelper.saveUser(userData);

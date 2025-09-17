@@ -25,7 +25,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final provider = userProvider.user['provider'] ?? {};
-    // final subscription = userProvider.user['subscription'] ?? {};
 
     final String avatarUrl = provider['avatarUrl'] ?? '';
     final String fullName = provider['name'] ?? "";
@@ -157,6 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         MainLayout(
           title: 'Profile',
           currentIndex: 4,
+          isNotificationIconShown: true,
           isSidebarEnabled: true,
           body: SingleChildScrollView(
             child: Column(

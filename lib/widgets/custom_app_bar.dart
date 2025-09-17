@@ -11,6 +11,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isBackAction;
   final bool isAvatarShow;
   final bool isSidebarEnabled;
+  final bool isNotificationIconShown;
   final VoidCallback? onMenuPressed;
 
   const CustomAppBar({
@@ -19,6 +20,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.isBackAction = false,
     this.isAvatarShow = true,
     this.isSidebarEnabled = false,
+    this.isNotificationIconShown = false,
     this.onMenuPressed,
   });
 
@@ -139,20 +141,20 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           Row(
             children: [
               if (isAvatarShow)
-                IconButton(
-                  icon: Icon(
-                    Icons.notifications,
-                    color:
-                        isDarkMode
-                            ? AppColors.lightSurface
-                            : AppColors.darkSurface,
-                    size: 20.sp,
+                if (isNotificationIconShown)
+                  IconButton(
+                    icon: Icon(
+                      Icons.notifications,
+                      color:
+                          isDarkMode
+                              ? AppColors.lightSurface
+                              : AppColors.darkSurface,
+                      size: 20.sp,
+                    ),
+                    onPressed: () {
+                      // CustomNavigation.push(context,  NotificationsScreen());
+                    },
                   ),
-                  onPressed: () {
-                    // CustomNavigation.push(context,  NotificationsScreen());
-                  },
-                ),
-
               // Theme Toggle
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 6.w),

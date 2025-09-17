@@ -22,12 +22,13 @@ class HomeScreen extends StatelessWidget {
     final date = DateFormat("EEEE, dd MMMM yyyy").format(DateTime.now());
     final userProvider = Provider.of<UserProvider>(context);
     final provider = userProvider.user['provider'] ?? {};
-    final subscription = userProvider.user['subscription'] ?? {};
+    final subscriptions = userProvider.user['subscriptions'] ?? [];
 
     return MainLayout(
       title: "Home",
       currentIndex: 0,
       isAvatarShow: true,
+      isNotificationIconShown: true,
       isSidebarEnabled: true,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

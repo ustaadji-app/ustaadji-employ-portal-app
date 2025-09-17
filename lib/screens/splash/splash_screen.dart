@@ -9,6 +9,7 @@ import 'package:employee_portal/constants/app_fonts_sizes.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/screens/auth/landing_screen.dart';
 import 'package:employee_portal/screens/auth/pending_verification.dart';
+import 'package:employee_portal/screens/auth/login_screen.dart';
 import 'package:employee_portal/screens/home/home_screen.dart';
 import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/utils/storage_helper.dart';
@@ -73,22 +74,50 @@ class _SplashScreenState extends State<SplashScreen>
         MaterialPageRoute(builder: (_) => const NoInternetScreen()),
       );
     } else {
-      _checkTokenAndNavigate();
+      _checkUserFlow();
     }
   }
 
-  Future<void> _checkTokenAndNavigate() async {
+  Future<void> _checkUserFlow() async {
     final token = await StorageHelper.getToken();
     final user = await StorageHelper.getUser();
 
+    print("📌 Stored User: $user");
+    print("📌 Stored Token: $token");
+
     if (!mounted) return;
 
-    if (token != null && token.isNotEmpty && user.isNotEmpty) {
+    // 🔹 Scenario 1: User ka data hi nahi hai (new user ya logout)
+    if (user.isEmpty) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+        (route) => false,
+      );
+      return;
+    }
+
+    final provider = user['provider'] as Map<String, dynamic>?;
+    final phoneNumber = provider?['phone_number'];
+
+    // Agar phone number hi missing ho toh AuthLanding bhej do
+    if (phoneNumber == null) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+        (route) => false,
+      );
+      return;
+    }
+
+    // 🔹 Scenario 2: Data hai but token nahi (registered but not logged in)
+    if (token == null || token.isEmpty) {
       try {
         final result = await apiService.getRequest(
-          endpoint: "provider/details",
-          token: token,
+          endpoint: "provider/details?phone=$phoneNumber",
         );
+
+        print("📌 Scenario 2 API Response: $result");
 
         if (!mounted) return;
 
@@ -96,36 +125,19 @@ class _SplashScreenState extends State<SplashScreen>
           final data = result['data'] as Map<String, dynamic>?;
 
           if (data != null && data['provider'] != null) {
-            final userProvider = Provider.of<UserProvider>(
-              context,
-              listen: false,
-            );
-
-            final provider = data['provider'] as Map<String, dynamic>;
-            final subscription =
-                data['subscription'] as Map<String, dynamic>? ?? {};
-            final accessToken = data['access_token'] as String? ?? token;
-
-            await StorageHelper.saveToken(accessToken);
+            final providerData = data['provider'] as Map<String, dynamic>;
+            final subscriptions = data['subscriptions'] as List<dynamic>? ?? [];
 
             final userData = {
-              "provider": provider,
-              "subscription": subscription,
+              "provider": providerData,
+              "subscriptions": subscriptions,
             };
 
             await StorageHelper.saveUser(userData);
+            Provider.of<UserProvider>(context, listen: false).setUser(userData);
 
-            userProvider.setUser(userData);
-
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            if (provider['is_active'] == 1) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (route) => false,
-              );
-            } else {
+            // Active check
+            if (providerData['is_active'] == 0) {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
@@ -133,35 +145,78 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 (route) => false,
               );
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
             }
           } else {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
-              (route) => false,
-            );
+            _goToAuthLanding();
           }
         } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
-            (route) => false,
-          );
+          _goToAuthLanding();
         }
       } catch (e) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
-          (route) => false,
-        );
+        print("❌ Error in Scenario 2: $e");
+        _goToAuthLanding();
       }
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
-        (route) => false,
-      );
+      return;
     }
+
+    // 🔹 Scenario 3: Data + token dono hain (already login)
+    try {
+      final result = await apiService.getRequest(
+        endpoint: "provider/details?phone=$phoneNumber",
+        token: token,
+      );
+
+      print("📌 Scenario 3 API Response: $result");
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>?;
+
+        if (data != null && data['provider'] != null) {
+          final providerData = data['provider'] as Map<String, dynamic>;
+          final subscriptions = data['subscriptions'] as List<dynamic>? ?? [];
+
+          final accessToken = data['access_token'] as String? ?? token;
+          await StorageHelper.saveToken(accessToken);
+
+          final userData = {
+            "provider": providerData,
+            "subscriptions": subscriptions,
+          };
+
+          await StorageHelper.saveUser(userData);
+          Provider.of<UserProvider>(context, listen: false).setUser(userData);
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        } else {
+          _goToAuthLanding();
+        }
+      } else {
+        _goToAuthLanding();
+      }
+    } catch (e) {
+      print("❌ Error in Scenario 3: $e");
+      _goToAuthLanding();
+    }
+  }
+
+  void _goToAuthLanding() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthLandingScreen()),
+      (route) => false,
+    );
   }
 
   @override

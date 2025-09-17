@@ -1,18 +1,24 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/auth_layout.dart';
 import 'package:employee_portal/models/register_model.dart';
+import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/screens/auth/pending_verification.dart';
 import 'package:employee_portal/services/register_service.dart';
 import 'package:employee_portal/utils/cnic_helper.dart';
 import 'package:employee_portal/utils/bill_helper.dart';
 import 'package:employee_portal/utils/image_picker_helper.dart';
+import 'package:employee_portal/utils/storage_helper.dart';
+import 'package:employee_portal/widgets/custom_app_toast.dart';
 import 'package:employee_portal/widgets/custom_button.dart';
+import 'package:employee_portal/widgets/custom_full_screen_loader.dart';
 import 'package:employee_portal/widgets/custom_input_fields.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -24,6 +30,10 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   int _currentStep = 0;
   String? selectedCategory;
+
+  bool isLoading = false;
+
+  File get dummyFile => File("assets/images/app_logo.png");
 
   // Controllers
   final _fullNameController = TextEditingController(text: "Muhammad Zain");
@@ -55,7 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Form Key
   final _formKey = GlobalKey<FormState>();
-
   void _nextStep() async {
     bool isValid = _formKey.currentState?.validate() ?? false;
     bool imagesValid = true;
@@ -149,14 +158,87 @@ class _RegisterScreenState extends State<RegisterScreen> {
         serviceId: 1,
       );
 
-      await submitRegister(registerData);
+      setState(() => isLoading = true);
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => PendingVerificationScreen()),
-        (Route<dynamic> route) => false,
-      );
-      return;
+      try {
+        debugPrint(
+          "📤 Sending Register Request with Data: ${registerData.toJson()}",
+        );
+
+        final response = await submitRegister(registerData);
+
+        debugPrint("📥 Register API Response: ${jsonEncode(response)}");
+
+        if (response['success'] == true) {
+          final provider = response['provider'] as Map<String, dynamic>?;
+          final subscriptions =
+              response['subscriptions'] as List<dynamic>? ?? [];
+
+          if (provider != null) {
+            final userData = {
+              "provider": provider,
+              "subscriptions": subscriptions,
+            };
+
+            await StorageHelper.saveUser(userData);
+            debugPrint("✅ User data saved in StorageHelper");
+
+            Provider.of<UserProvider>(context, listen: false).setUser(userData);
+            debugPrint("✅ UserProvider updated with new user data");
+
+            AppToast.show(
+              context,
+              message: response['message'] ?? "Registration Successful!",
+              variant: ToastVariant.success,
+            );
+
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            if (!mounted) {
+              debugPrint("⚠️ Widget not mounted, navigation skipped.");
+              return;
+            }
+
+            debugPrint("➡️ Navigating to PendingVerificationScreen...");
+
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PendingVerificationScreen(),
+              ),
+              (route) => false,
+            );
+          } else {
+            debugPrint("❌ Provider data missing in response");
+            AppToast.show(
+              context,
+              message: "Provider data missing. Please try again.",
+              variant: ToastVariant.error,
+            );
+          }
+        } else {
+          debugPrint("❌ Registration failed: ${response['message']}");
+          AppToast.show(
+            context,
+            message: response['message'] ?? "Registration failed",
+            variant: ToastVariant.error,
+          );
+        }
+      } catch (e, stack) {
+        debugPrint("🔥 Exception during registration: $e");
+        debugPrint("Stacktrace: $stack");
+        AppToast.show(
+          context,
+          message: "Something went wrong. Please try again.",
+          variant: ToastVariant.error,
+        );
+      } finally {
+        if (mounted) {
+          setState(() => isLoading = false);
+        }
+      }
+
+      return; // Stop further step increment
     }
 
     if (_currentStep < 3) setState(() => _currentStep++);
@@ -376,8 +458,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _gNameController,
           validator: (v) {
             if (v == null || v.isEmpty) return "Guarantor Name is required";
-            if (v.trim().length < 3)
+            if (v.trim().length < 3) {
               return "Guarantor Name must be at least 3 characters";
+            }
             return null;
           },
         ),
@@ -389,8 +472,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           keyboardType: TextInputType.number,
           validator: (v) {
             if (v == null || v.isEmpty) return "G. CNIC is required";
-            if (!RegExp(r'^\d{13}$').hasMatch(v))
+            if (!RegExp(r'^\d{13}$').hasMatch(v)) {
               return "G. CNIC must be exactly 13 digits";
+            }
+            if (v == _cnicController.text) {
+              return "Guarantor CNIC cannot be same as your CNIC";
+            }
             return null;
           },
         ),
@@ -415,9 +502,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _gPhoneController,
           validator: (v) {
             if (v == null || v.isEmpty) return "G. Phone is required";
-            if (!RegExp(r'^\d{10}$').hasMatch(v))
+            if (!RegExp(r'^\d{10}$').hasMatch(v)) {
               return "G. Phone must be exactly 10 digits";
+            }
             if (!v.startsWith('3')) return "G. Phone must start with 3";
+            if (v == _phoneController.text) {
+              return "Guarantor Phone cannot be same as your Phone";
+            }
             return null;
           },
         ),
@@ -520,7 +611,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Icon(
                       cat["icon"] as IconData,
-                      color: isSelected ? primary : textColor.withOpacity(0.7),
+                      color:
+                          isSelected
+                              ? primary
+                              : textColor.withValues(alpha: 0.7),
                       size: 32.sp,
                     ),
                     SizedBox(height: 10.h),
@@ -682,66 +776,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
 
-    return AuthLayout(
-      title: "Register",
-      isBackAction: true,
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10.r),
-              child: LinearProgressIndicator(
-                value: (_currentStep + 1) / steps.length,
-                minHeight: 8.h,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                valueColor: AlwaysStoppedAnimation(primary),
-              ),
-            ),
-            AppSpacing.vmd,
-            Expanded(
-              child: SingleChildScrollView(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: steps[_currentStep],
+    return Stack(
+      children: [
+        AuthLayout(
+          title: "Register",
+          isBackAction: true,
+          body: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10.r),
+                  child: LinearProgressIndicator(
+                    value: (_currentStep + 1) / steps.length,
+                    minHeight: 8.h,
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    valueColor: AlwaysStoppedAnimation(primary),
+                  ),
                 ),
-              ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.only(top: 16.h),
-                child: Row(
-                  children: [
-                    if (_currentStep > 0)
-                      Expanded(
-                        child: CustomButton(text: "Back", onPressed: _prevStep),
-                      ),
-                    if (_currentStep > 0) SizedBox(width: 12.w),
-                    Expanded(
-                      child: CustomButton(
-                        text: _currentStep == 3 ? "Submit" : "Next",
-                        onPressed: _nextStep,
-                      ),
+                AppSpacing.vmd,
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: steps[_currentStep],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 16.h),
+                    child: Row(
+                      children: [
+                        if (_currentStep > 0)
+                          Expanded(
+                            child: CustomButton(
+                              text: "Back",
+                              onPressed: _prevStep,
+                            ),
+                          ),
+                        if (_currentStep > 0) SizedBox(width: 12.w),
+                        Expanded(
+                          child: CustomButton(
+                            text: _currentStep == 3 ? "Submit" : "Next",
+                            onPressed: _nextStep,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (isLoading) FullScreenLoader(),
+      ],
     );
   }
 }
-
-
-
-
-// Todays Tasks
-// Phone Number check how it comes 
-// Location and also check on handle next that the location is in karchi? so it will go next  
-// then check if the backend devloper said you have to give me a url of all images so than i have to make urls of images otherwise i will not do 
-// after submit make a screen and the data is stored in sharedPrefernces and the screen for you will be able after 24 hours like that 
-// than always check the data when user come on splashScreen that the admin verfied him if yes he will direct go to the phone Number screen and take otp than came on the home Page 
-// polish all the things for not come again here 

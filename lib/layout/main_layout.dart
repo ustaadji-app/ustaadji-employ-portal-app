@@ -14,6 +14,7 @@ class MainLayout extends StatefulWidget {
   final bool isBackAction;
   final bool isAvatarShow;
   final bool isSidebarEnabled;
+  final bool isNotificationIconShown;
 
   const MainLayout({
     super.key,
@@ -24,6 +25,7 @@ class MainLayout extends StatefulWidget {
     this.isBackAction = false,
     this.isAvatarShow = true,
     this.isSidebarEnabled = false,
+    this.isNotificationIconShown = false,
   });
 
   @override
@@ -76,6 +78,7 @@ class _MainLayoutState extends State<MainLayout> {
         isSidebarEnabled: widget.isSidebarEnabled,
         isAvatarShow: widget.isAvatarShow,
         onMenuPressed: _toggleSidebar,
+        isNotificationIconShown: widget.isNotificationIconShown,
       ),
       body: SafeArea(
         child: Padding(

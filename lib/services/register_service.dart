@@ -1,15 +1,16 @@
+import 'dart:convert';
 import 'package:employee_portal/models/register_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 
-Future<void> submitRegister(RegisterModel data) async {
+Future<Map<String, dynamic>> submitRegister(RegisterModel data) async {
   final uri = Uri.parse(
     "https://irex.pk/ustaadjiweb/public/api/provider/register",
   );
 
   var request = http.MultipartRequest("POST", uri);
 
-  // Add text fields
+  // Text fields
   request.fields['name'] = data.name;
   request.fields['phone_number'] = "+92${data.phoneNumber}";
   request.fields['cnic_number'] = data.cnicNumber;
@@ -18,10 +19,11 @@ Future<void> submitRegister(RegisterModel data) async {
   request.fields['g_phone_number'] = "+92${data.gPhoneNumber}";
   request.fields['g_cnic_number'] = data.gCnicNumber;
   request.fields['g_address'] = data.gAddress;
-  if (data.serviceId != null)
+  if (data.serviceId != null) {
     request.fields['service_id'] = data.serviceId.toString();
+  }
 
-  // Add files
+  // Files
   request.files.add(
     await http.MultipartFile.fromPath(
       'cnic_front_image',
@@ -94,14 +96,12 @@ Future<void> submitRegister(RegisterModel data) async {
     final response = await request.send();
     final respStr = await response.stream.bytesToString();
 
-    print(respStr);
+    print("Raw Response: $respStr");
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print("Success: $respStr");
-    } else {
-      print("Failed (${response.statusCode}): $respStr");
-    }
+    final jsonResp = jsonDecode(respStr);
+
+    return jsonResp;
   } catch (e) {
-    print("Error: $e");
+    return {"success": false, "message": "Error: $e"};
   }
 }
