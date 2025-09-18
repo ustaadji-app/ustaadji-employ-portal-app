@@ -1,7 +1,7 @@
 import 'package:employee_portal/constants/app_colors.dart';
-import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../constants/app_spacing.dart';
 import '../widgets/custom_text.dart';
 
 class CustomSidebar extends StatefulWidget {
@@ -50,16 +50,12 @@ class CustomSidebarState extends State<CustomSidebar>
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    final backgroundColor =
-        isDarkMode ? AppColors.darkSurface : AppColors.lightSurface;
-    final textColor = isDarkMode ? AppColors.darkText : AppColors.lightText;
-    final primaryColor =
-        isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary;
-
-    // Responsive width: 70% of screen width
     final sidebarWidth = MediaQuery.of(context).size.width * 0.7;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
 
     return Stack(
       children: [
@@ -80,95 +76,85 @@ class CustomSidebarState extends State<CustomSidebar>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Profile Section
                     Container(
                       width: double.infinity,
-                      color: primaryColor,
+                      color:
+                          isDark
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary,
                       padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.md.w,
                         vertical: AppSpacing.lg.h,
                       ),
-                      child: CustomText(
-                        text: "Ustaad Ji",
-                        size: CustomTextSize.x2l,
-                        fontFamily: "Poppins",
-                        fontWeight: FontWeight.w600,
-                        textAlign: TextAlign.start,
-                        color: CustomTextColor.alwaysWhite,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 28.r,
+                            backgroundColor: textColor.withValues(alpha: 0.09),
+                            child: Icon(
+                              Icons.person,
+                              size: 32.sp,
+                              color: Colors.white,
+                            ),
+                          ),
+                          AppSpacing.hmd,
+                          Expanded(
+                            child: CustomText(
+                              text: "Ustaad Ji",
+                              size: CustomTextSize.xl,
+                              fontFamily: "Poppins",
+                              fontWeight: FontWeight.w600,
+                              color: CustomTextColor.alwaysWhite,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    AppSpacing.vlg,
+                    AppSpacing.vmd,
+                    // Menu Section
                     Expanded(
                       child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm.w,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md.w,
-                              ),
-                              child: CustomText(
-                                text: "Account",
-                                size: CustomTextSize.lg,
-                                fontFamily: "Poppins",
-                                fontWeight: FontWeight.w600,
-                                color: CustomTextColor.text,
-                              ),
-                            ),
-                            AppSpacing.vmd,
                             _buildMenuItem(
-                              icon: Icons.shopping_bag,
-                              label: "Orders",
+                              icon: Icons.dashboard,
+                              label: "Dashboard",
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
                             _buildMenuItem(
-                              icon: Icons.location_on,
-                              label: "Address",
+                              icon: Icons.work,
+                              label: "My Projects",
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
                             _buildMenuItem(
-                              icon: Icons.card_giftcard,
-                              label: "Rewards",
+                              icon: Icons.chat,
+                              label: "Messages",
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
                             _buildMenuItem(
-                              icon: Icons.account_balance_wallet,
-                              label: "Wallet",
-                              color: textColor,
-                              onTap: toggleSidebar,
-                            ),
-                            AppSpacing.vlg,
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md.w,
-                              ),
-                              child: CustomText(
-                                text: "Information",
-                                size: CustomTextSize.lg,
-                                fontFamily: "Poppins",
-                                fontWeight: FontWeight.w600,
-                                color: CustomTextColor.text,
-                              ),
-                            ),
-                            AppSpacing.vmd,
-                            _buildMenuItem(
-                              icon: Icons.info,
-                              label: "About Us",
+                              icon: Icons.notifications,
+                              label: "Notifications",
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
                             _buildMenuItem(
-                              icon: Icons.description,
-                              label: "Terms and Conditions",
+                              icon: Icons.people,
+                              label: "Team",
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
                             _buildMenuItem(
-                              icon: Icons.lock,
-                              label: "Privacy Policy",
+                              icon: Icons.analytics,
+                              label: "Reports",
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
@@ -178,18 +164,65 @@ class CustomSidebarState extends State<CustomSidebar>
                               color: textColor,
                               onTap: toggleSidebar,
                             ),
-                            _buildMenuItem(
-                              icon: Icons.verified_user,
-                              label: "Permissions",
-                              color: textColor,
-                              onTap: toggleSidebar,
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Logout Fixed Bottom
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md.w,
+                        vertical: AppSpacing.md.h,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.redAccent.withOpacity(0.1),
+                            Colors.transparent,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 0.6,
+                          ),
+                        ),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12.r),
+                        onTap: toggleSidebar,
+                        child: Row(
+                          children: [
+                            // Circle background for icon
+                            Container(
+                              padding: EdgeInsets.all(8.r),
+                              decoration: const BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.logout,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                            AppSpacing.vlg,
-                            _buildMenuItem(
-                              icon: Icons.logout,
-                              label: "Logout",
-                              color: Colors.redAccent,
-                              onTap: toggleSidebar,
+                            AppSpacing.hmd,
+                            Expanded(
+                              child: CustomText(
+                                text: "Logout",
+                                size: CustomTextSize.base,
+                                fontFamily: "Poppins",
+                                fontWeight: FontWeight.w600,
+                                color: CustomTextColor.error,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              color: AppColors.error,
+                              size: 16,
                             ),
                           ],
                         ),
@@ -211,28 +244,40 @@ class CustomSidebarState extends State<CustomSidebar>
     required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: AppSpacing.md.h,
-          horizontal: AppSpacing.md.w,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 24.sp),
-            AppSpacing.hsm,
-            Expanded(
-              child: CustomText(
-                text: label,
-                size: CustomTextSize.md,
-                fontFamily: "Poppins",
-                fontWeight: FontWeight.w500,
-                color: CustomTextColor.text,
-                overflow: TextOverflow.ellipsis,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm.h),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            vertical: AppSpacing.sm.h,
+            horizontal: AppSpacing.sm.w,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            color:
+                isDark
+                    ? AppColors.darkTextSecondary.withValues(alpha: 0.07)
+                    : AppColors.lightTextSecondary.withValues(alpha: 0.07),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22.sp),
+              AppSpacing.hsm,
+              Expanded(
+                child: CustomText(
+                  text: label,
+                  size: CustomTextSize.base,
+                  fontFamily: "Poppins",
+                  fontWeight: FontWeight.w500,
+                  color: CustomTextColor.text,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

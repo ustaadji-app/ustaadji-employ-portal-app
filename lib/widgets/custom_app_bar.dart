@@ -1,6 +1,8 @@
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/provider/user_provider.dart';
+import 'package:employee_portal/screens/notfications/notifcations_screen.dart';
 import 'package:employee_portal/themes/theme_provider.dart';
+import 'package:employee_portal/utils/custom_navigation.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -152,12 +154,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       size: 20.sp,
                     ),
                     onPressed: () {
-                      // CustomNavigation.push(context,  NotificationsScreen());
+                      CustomNavigation.push(context, NotificationsScreen());
                     },
                   ),
               // Theme Toggle
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6.w),
+                padding: EdgeInsets.only(right: 6.w),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20.r),
                   onTap: () {
