@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -15,12 +14,10 @@ class FullScreenLoader extends StatelessWidget {
 
     return Stack(
       children: [
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 2.4, sigmaY: 2.4),
-          child: Container(color: backgroundColor),
-        ),
-        // Prevent user interaction
-        ModalBarrier(dismissible: false, color: Colors.transparent),
+        Container(color: backgroundColor),
+        const ModalBarrier(dismissible: false, color: Colors.transparent),
+
+        // Loader center me
         Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(

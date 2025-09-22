@@ -55,7 +55,7 @@ class BillScannerHelper {
         ),
       );
       final result = await scanner.scanDocument();
-      if (result == null || result.images.isEmpty) {
+      if (result.images.isEmpty) {
         _showSnack(context, "No document captured");
         return null;
       }
@@ -117,7 +117,7 @@ class BillScannerHelper {
     final recognizer = TextRecognizer();
     final recognized = await recognizer.processImage(inputImage);
     await recognizer.close();
-    return recognized.text ?? '';
+    return recognized.text;
   }
 
   // Normalize text

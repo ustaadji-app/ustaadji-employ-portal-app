@@ -37,7 +37,7 @@ class CustomTextField extends StatelessWidget {
         prefixIcon: icon != null ? Icon(icon) : null,
         prefixIconColor: WidgetStateColor.resolveWith(
           (states) =>
-              states.contains(MaterialState.focused) ? primary : textSecondary,
+              states.contains(WidgetState.focused) ? primary : textSecondary,
         ),
         labelText: label,
         labelStyle: TextStyle(color: textSecondary, fontSize: 14.sp),

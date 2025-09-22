@@ -51,6 +51,10 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   connectivity_plus: ^7.0.0
   internet_connection_checker: ^1.0.0+1
+  cloud_firestore: ^6.0.2
+  firebase_messaging: ^16.0.2
+  flutter_launcher_icons: ^0.14.4
+  flutter_local_notifications: ^19.4.2
 
 dev_dependencies:
   flutter_test:
@@ -95,6 +99,14 @@ flutter:
         - asset: assets/fonts/nunito/Nunito-Italic.ttf
         - asset: assets/fonts/nunito/Nunito-Bold.ttf
           weight: 700
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_logo.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/app_logo.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:

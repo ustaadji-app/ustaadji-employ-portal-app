@@ -17,8 +17,8 @@ Future<List<File>> pickImagesFromGallery({
     return currentImages;
   }
 
-  final List<XFile>? pickedFiles = await picker.pickMultiImage();
-  if (pickedFiles == null || pickedFiles.isEmpty) return currentImages;
+  final List<XFile> pickedFiles = await picker.pickMultiImage();
+  if (pickedFiles.isEmpty) return currentImages;
 
   final selectedFiles = pickedFiles.map((xfile) => File(xfile.path)).toList();
 

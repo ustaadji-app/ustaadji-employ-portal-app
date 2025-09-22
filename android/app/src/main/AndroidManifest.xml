@@ -4,8 +4,7 @@
 
 
     <application
-        android:label="employee_portal"
-        android:name="${applicationName}"
+        android:label="UstaadG Employ"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

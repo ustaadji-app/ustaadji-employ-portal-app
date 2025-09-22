@@ -178,7 +178,7 @@ class CustomSidebarState extends State<CustomSidebar>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.redAccent.withOpacity(0.1),
+                            Colors.redAccent.withValues(alpha: 0.1),
                             Colors.transparent,
                           ],
                           begin: Alignment.topLeft,
@@ -186,7 +186,7 @@ class CustomSidebarState extends State<CustomSidebar>
                         ),
                         border: Border(
                           top: BorderSide(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.1),
                             width: 0.6,
                           ),
                         ),

@@ -34,7 +34,7 @@ class CnicScannerHelper {
         ),
       );
       final result = await scanner.scanDocument();
-      if (result == null || result.images.isEmpty) {
+      if (result.images.isEmpty) {
         _showSnack(context, "No document captured");
         return null;
       }

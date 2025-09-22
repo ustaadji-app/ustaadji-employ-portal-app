@@ -367,8 +367,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _fullNameController,
           validator: (v) {
             if (v == null || v.isEmpty) return "Full Name is required";
-            if (v.trim().length < 3)
+            if (v.trim().length < 3) {
               return "Full Name must be at least 3 characters";
+            }
             return null;
           },
         ),
@@ -380,8 +381,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           keyboardType: TextInputType.number,
           validator: (v) {
             if (v == null || v.isEmpty) return "CNIC is required";
-            if (!RegExp(r'^\d{13}$').hasMatch(v))
+            if (!RegExp(r'^\d{13}$').hasMatch(v)) {
               return "CNIC must be exactly 13 digits";
+            }
             return null;
           },
         ),
@@ -406,8 +408,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _phoneController,
           validator: (v) {
             if (v == null || v.isEmpty) return "Phone is required";
-            if (!RegExp(r'^\d{10}$').hasMatch(v))
+            if (!RegExp(r'^\d{10}$').hasMatch(v)) {
               return "Phone must be exactly 10 digits";
+            }
             if (!v.startsWith('3')) return "Phone number must start with 3";
             return null;
           },

@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/main_layout.dart';
+import 'package:employee_portal/utils/firebase_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/custom_text.dart';
@@ -17,126 +19,38 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  List<Map<String, dynamic>> messages = [
-    {
-      "text": "I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-    {
-      "text":
-          "I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-    {
-      "text":
-          "I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-    {
-      "text":
-          "I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-    {
-      "text":
-          "I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-    {
-      "text":
-          "I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-    {
-      "text":
-          "I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?I am good, you?",
-      "isSent": true,
-      "time": "10:01 AM",
-      "isSeen": true,
-    },
-    {
-      "text": "Doing well!",
-      "isSent": false,
-      "time": "10:02 AM",
-      "isSeen": false,
-    },
-  ];
-
-  bool _firstLoad = true;
+  late String chatId;
+  final String jobId = "job_123"; // abhi temporary
+  final String customerId = "cust_1"; // abhi temporary
+  final String providerId = "prov_1"; // abhi temporary
 
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-      _firstLoad = false;
-    });
+    _setupChat();
   }
 
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-    setState(() {
-      messages.add({
-        "text": text,
-        "isSent": true,
-        "time": "Now",
-        "isSeen": false,
-      });
-      _controller.clear();
-    });
+  Future<void> _setupChat() async {
+    chatId = await FirebaseHelper.instance.getOrCreateChat(
+      jobId: jobId,
+      customerId: customerId,
+      providerId: providerId,
+    );
+    setState(() {}); // refresh UI
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  void _sendMessage(String text) async {
+    if (text.trim().isEmpty || chatId.isEmpty) return;
+
+    // Firestore pe send
+    await FirebaseHelper.instance.sendMessage(
+      chatId: chatId,
+      senderId: customerId, // abhi hardcoded, baad me current user
+      text: text,
+    );
+
+    _controller.clear();
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -161,93 +75,118 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    if (!_firstLoad && bottomInset > 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-    }
-
     return MainLayout(
       title: widget.user['name'],
       currentIndex: 1,
       isAvatarShow: false,
       showBottomNav: false,
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                final isSent = message["isSent"] as bool;
-                final isLastSentMessage =
-                    isSent &&
-                    messages.lastIndexWhere((msg) => msg["isSent"] == true) ==
-                        index;
+      body:
+          chatId.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  Expanded(
+                    child: StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: FirebaseHelper.instance.listenMessages(
+                        chatId: chatId,
+                      ),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                return _buildMessageBubble(
-                  message,
-                  isSent,
-                  isLastSentMessage,
-                  isDark,
-                );
-              },
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md.w,
-              vertical: AppSpacing.sm.h,
-            ),
-            color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.camera_alt,
-                    color: isDark ? AppColors.darkText : AppColors.lightText,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    Icons.mic,
-                    color: isDark ? AppColors.darkText : AppColors.lightText,
-                  ),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: "Type a message",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24.r),
-                        borderSide: BorderSide.none,
-                      ),
-                      fillColor:
-                          isDark
-                              ? AppColors.darkSurface
-                              : AppColors.lightSurface,
-                      filled: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md.w,
-                      ),
+                        final messages = snapshot.data!;
+
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToBottom();
+                        });
+
+                        return ListView.builder(
+                          controller: _scrollController,
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final message = messages[index];
+                            final isSent = message["senderId"] == customerId;
+                            final isLastSentMessage =
+                                isSent &&
+                                messages.lastIndexWhere(
+                                      (msg) => msg["senderId"] == customerId,
+                                    ) ==
+                                    index;
+
+                            return _buildMessageBubble(
+                              message,
+                              isSent,
+                              isLastSentMessage,
+                              isDark,
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => _sendMessage(_controller.text),
-                  icon: Icon(
-                    Icons.send,
-                    color:
-                        isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: Icon(
+                            Icons.camera_alt,
+                            color:
+                                isDark
+                                    ? AppColors.darkText
+                                    : AppColors.lightText,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: Icon(
+                            Icons.mic,
+                            color:
+                                isDark
+                                    ? AppColors.darkText
+                                    : AppColors.lightText,
+                          ),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            decoration: InputDecoration(
+                              hintText: "Type a message",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24.r),
+                                borderSide: BorderSide.none,
+                              ),
+                              fillColor:
+                                  isDark
+                                      ? AppColors.darkSurface
+                                      : AppColors.lightSurface,
+                              filled: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md.w,
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _sendMessage(_controller.text),
+                          icon: Icon(
+                            Icons.send,
+                            color:
+                                isDark
+                                    ? AppColors.darkPrimary
+                                    : AppColors.lightPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                ],
+              ),
     );
   }
 
@@ -295,8 +234,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   BoxShadow(
                     color:
                         isDark
-                            ? Colors.black.withValues(alpha: 0.4)
-                            : Colors.grey.withValues(alpha: 0.3),
+                            ? Colors.black.withOpacity(0.4)
+                            : Colors.grey.withOpacity(0.3),
                     blurRadius: 6.r,
                     spreadRadius: 1.r,
                     offset: const Offset(2, 3),
@@ -304,7 +243,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 ],
               ),
               child: CustomText(
-                text: message["text"] as String,
+                text: message["text"] ?? "",
                 size: CustomTextSize.base,
                 fontFamily: "Roboto",
                 fontWeight: FontWeight.normal,
@@ -317,7 +256,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
             Padding(
               padding: EdgeInsets.only(top: AppSpacing.xs.h),
               child: CustomText(
-                text: message["isSeen"] ? "Seen" : "Sent",
+                text: message["read"] == true ? "Seen" : "Sent",
                 size: CustomTextSize.xs,
                 fontFamily: "Roboto",
                 fontWeight: FontWeight.normal,

@@ -1,19 +1,76 @@
+import 'dart:developer';
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_fonts_sizes.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
+import 'package:employee_portal/job/job_detail_screen.dart';
 import 'package:employee_portal/layout/main_layout.dart';
 import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/screens/messages/chat_screen.dart';
+import 'package:employee_portal/services/api_services.dart';
 import 'package:employee_portal/utils/custom_navigation.dart';
+import 'package:employee_portal/utils/storage_helper.dart';
 import 'package:employee_portal/widgets/custom_button.dart';
+import 'package:employee_portal/widgets/custom_full_screen_loader.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool isLoading = false;
+  final ApiService apiService = ApiService();
+
+  List<dynamic> jobs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPendingJobs();
+  }
+
+  Future<void> _fetchPendingJobs() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final token = await StorageHelper.getToken();
+      print("Token:$token");
+      if (token == null) {
+        log("⚠️ Token not found");
+        return;
+      }
+
+      final response = await apiService.getRequest(
+        endpoint: "provider/jobs/pending",
+        token: token,
+      );
+
+      log("📌 API Response: ${response.toString()}");
+
+      if (response["success"] == true) {
+        setState(() {
+          jobs = response["data"]["jobs"];
+        });
+      }
+    } catch (e, st) {
+      log("❌ Error fetching jobs: $e", stackTrace: st);
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,118 +79,142 @@ class HomeScreen extends StatelessWidget {
     final date = DateFormat("EEEE, dd MMMM yyyy").format(DateTime.now());
     final userProvider = Provider.of<UserProvider>(context);
     final provider = userProvider.user['provider'] ?? {};
-    final subscriptions = userProvider.user['subscriptions'] ?? [];
 
-    return MainLayout(
-      title: "Home",
-      currentIndex: 0,
-      isAvatarShow: true,
-      isNotificationIconShown: true,
-      isSidebarEnabled: true,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm.w,
-              vertical: AppSpacing.md.h,
-            ),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-              borderRadius: BorderRadius.circular(16.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: Offset(0, 3),
+    return Stack(
+      children: [
+        MainLayout(
+          title: "Home",
+          currentIndex: 0,
+          isAvatarShow: true,
+          isNotificationIconShown: true,
+          isSidebarEnabled: true,
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm.w,
+                  vertical: AppSpacing.md.h,
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 28.r,
-                      backgroundColor:
-                          isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary,
-                      backgroundImage:
-                          (provider?['avatarUrl'] != null &&
-                                  (provider?['avatarUrl'] as String).isNotEmpty)
-                              ? NetworkImage(provider?['avatarUrl'])
-                              : null,
-                      child:
-                          (provider?['avatarUrl'] == null ||
-                                  (provider?['avatarUrl'] as String).isEmpty)
-                              ? Text(
-                                provider?['name'] != null &&
-                                        (provider?['name'] as String).isNotEmpty
-                                    ? (provider!['name'] as String)[0]
-                                        .toUpperCase()
-                                    : '',
-                                style: TextStyle(
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              )
-                              : null,
+                decoration: BoxDecoration(
+                  color:
+                      isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(16.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
                     ),
-                    AppSpacing.hmd,
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
-                        CustomText(
-                          text: provider?['name'] ?? '',
-                          size: CustomTextSize.lg,
-                          fontWeight: FontWeight.bold,
-                          color: CustomTextColor.text,
+                        CircleAvatar(
+                          radius: 28.r,
+                          backgroundColor:
+                              isDark
+                                  ? AppColors.darkPrimary
+                                  : AppColors.lightPrimary,
+                          backgroundImage:
+                              (provider?['avatarUrl'] != null &&
+                                      (provider?['avatarUrl'] as String)
+                                          .isNotEmpty)
+                                  ? NetworkImage(provider?['avatarUrl'])
+                                  : null,
+                          child:
+                              (provider?['avatarUrl'] == null ||
+                                      (provider?['avatarUrl'] as String)
+                                          .isEmpty)
+                                  ? Text(
+                                    provider?['name'] != null &&
+                                            (provider?['name'] as String)
+                                                .isNotEmpty
+                                        ? (provider!['name'] as String)[0]
+                                            .toUpperCase()
+                                        : '',
+                                    style: TextStyle(
+                                      fontSize: 20.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : null,
                         ),
-                        CustomText(
-                          text: date,
-                          size: CustomTextSize.sm,
-                          color: CustomTextColor.textSecondary,
+                        AppSpacing.hmd,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CustomText(
+                              text: provider?['name'] ?? '',
+                              size: CustomTextSize.lg,
+                              fontWeight: FontWeight.bold,
+                              color: CustomTextColor.text,
+                            ),
+                            CustomText(
+                              text: date,
+                              size: CustomTextSize.sm,
+                              color: CustomTextColor.textSecondary,
+                            ),
+                          ],
                         ),
+                      ],
+                    ),
+                    AppSpacing.vmd,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStat("Total Jobs", "30", textColor),
+                        _buildStat("Completed", "20", textColor),
+                        _buildStat("Pending", "3", textColor),
+                        _buildStat("Cancelled", "2", textColor),
                       ],
                     ),
                   ],
                 ),
-
-                AppSpacing.vmd,
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStat("Total Jobs", "30", textColor),
-                    _buildStat("Completed", "20", textColor),
-                    _buildStat("Pending", "3", textColor),
-                    _buildStat("Cancelled", "2", textColor),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              AppSpacing.vmd,
+              CustomText(
+                text: "Available Jobs",
+                size: CustomTextSize.md,
+                fontWeight: FontWeight.w600,
+                color: CustomTextColor.text,
+              ),
+              AppSpacing.vmd,
+              Expanded(
+                child:
+                    isLoading
+                        ? const SizedBox()
+                        : jobs.isEmpty
+                        ? Center(
+                          child: CustomText(
+                            text: "No jobs available",
+                            size: CustomTextSize.base,
+                            color: CustomTextColor.textSecondary,
+                          ),
+                        )
+                        : ListView.builder(
+                          itemCount: jobs.length,
+                          itemBuilder: (context, index) {
+                            final jobData = jobs[index];
+                            return _buildJobCard(
+                              context,
+                              textColor,
+                              isDark,
+                              jobData,
+                            );
+                          },
+                        ),
+              ),
+            ],
           ),
-          AppSpacing.vmd,
-          CustomText(
-            text: "Recent Jobs",
-            size: CustomTextSize.lg,
-            fontWeight: FontWeight.w600,
-            color: CustomTextColor.text,
-          ),
+        ),
 
-          AppSpacing.vmd,
-          Expanded(
-            child: ListView.builder(
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                return _buildJobCard(context, textColor, isDark);
-              },
-            ),
-          ),
-        ],
-      ),
+        // 👇 Loader overlay
+        if (isLoading) FullScreenLoader(),
+      ],
     );
   }
 
@@ -156,7 +237,16 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildJobCard(BuildContext context, Color textColor, bool isDark) {
+  Widget _buildJobCard(
+    BuildContext context,
+    Color textColor,
+    bool isDark,
+    dynamic jobData, // 👈 Ab yahan job data milega
+  ) {
+    final job = jobData["job"];
+    final service = job["service"];
+    // final customer = jobData["customer"];
+
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
@@ -175,7 +265,6 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- Title & Status ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -197,7 +286,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     SizedBox(width: 10.w),
                     CustomText(
-                      text: "Plumber work",
+                      text: service?["main_service_name"] ?? "Service",
                       color: CustomTextColor.text,
                       fontWeight: FontWeight.w600,
                       size: CustomTextSize.md,
@@ -210,42 +299,38 @@ class HomeScreen extends StatelessWidget {
                     vertical: 4.h,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.15),
+                    color: Colors.orange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text(
-                    "Active",
+                    job["status"] ?? "Pending",
                     style: TextStyle(
                       fontSize: AppFonts.xs,
                       fontWeight: FontWeight.w600,
-                      color: Colors.green,
+                      color: Colors.orange,
                     ),
                   ),
                 ),
               ],
             ),
-
             AppSpacing.vsm,
-
             Row(
               children: [
                 Icon(Icons.location_on, size: 18.sp, color: Colors.redAccent),
                 SizedBox(width: 6.w),
                 Expanded(
                   child: Text(
-                    "Flat 2A, Horizon Tower, DHA Phase 5, Karachi",
+                    job["customer_location"] ?? "No location",
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: textColor.withValues(alpha: 0.7),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    softWrap: false,
                   ),
                 ),
               ],
             ),
-
             SizedBox(height: 10.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -259,14 +344,14 @@ class HomeScreen extends StatelessWidget {
                     ),
                     SizedBox(width: 6.w),
                     CustomText(
-                      text: "PKR 1500",
+                      text: "PKR ${job["amount"] ?? 0}",
                       color: CustomTextColor.textSecondary,
                       size: CustomTextSize.base,
                     ),
                   ],
                 ),
                 Text(
-                  "25 September 2025",
+                  job["scheduled_date"] ?? "",
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontStyle: FontStyle.italic,
@@ -275,10 +360,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-
             AppSpacing.vlg,
-
-            // --- Action Buttons ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -288,20 +370,15 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {
                     CustomNavigation.push(context, ChatScreen());
                   },
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.w,
-                    vertical: 8.h,
-                  ),
                 ),
                 CustomButton(
                   text: "View Details",
                   onPressed: () {
-                    CustomNavigation.push(context, ChatScreen());
+                    CustomNavigation.push(
+                      context,
+                      JobDetailsScreen(jobData: jobData),
+                    );
                   },
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 20.w,
-                    vertical: 8.h,
-                  ),
                 ),
               ],
             ),

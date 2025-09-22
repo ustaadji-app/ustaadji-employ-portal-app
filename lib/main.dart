@@ -1,6 +1,7 @@
 import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/routes/app_routes.dart';
 import 'package:employee_portal/routes/app_routes_names.dart';
+import 'package:employee_portal/services/notification_service.dart';
 import 'package:employee_portal/themes/app_theme.dart';
 import 'package:employee_portal/themes/theme_provider.dart';
 import 'package:flutter/material.dart';
@@ -8,17 +9,19 @@ import 'package:provider/provider.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/foundation.dart';
 import 'package:toastification/toastification.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // final notificationService = NotificationService();
-  // await notificationService.requestPermission();
-  // await notificationService.getToken();
-  // await notificationService.initLocalNotifications();
-  // notificationService.foregroundMessage();
+  final notificationService = NotificationService();
+  await notificationService.requestPermission();
+  await notificationService.getToken();
+  await notificationService.initLocalNotifications();
+  notificationService.foregroundMessage();
 
   runApp(
     MultiProvider(

@@ -1,4 +1,4 @@
-package com.example.employee_portal
+package com.ustaadji.pk.app
 
 import io.flutter.embedding.android.FlutterActivity
 
