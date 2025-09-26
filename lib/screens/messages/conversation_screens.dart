@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/main_layout.dart';
@@ -9,7 +8,19 @@ import '../../widgets/custom_text.dart';
 
 class ConversationScreen extends StatefulWidget {
   final Map<String, dynamic> user;
-  const ConversationScreen({super.key, required this.user});
+  final String jobId;
+  final String currentUserId;
+  final String customerName;
+  final String providerName;
+
+  const ConversationScreen({
+    super.key,
+    required this.user,
+    required this.jobId,
+    required this.currentUserId,
+    required this.customerName,
+    required this.providerName,
+  });
 
   @override
   State<ConversationScreen> createState() => _ConversationScreenState();
@@ -19,10 +30,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  late String chatId;
-  final String jobId = "job_123"; // abhi temporary
-  final String customerId = "cust_1"; // abhi temporary
-  final String providerId = "prov_1"; // abhi temporary
+  String? chatId;
+  bool _isChatReady = false;
 
   @override
   void initState() {
@@ -31,21 +40,41 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   Future<void> _setupChat() async {
-    chatId = await FirebaseHelper.instance.getOrCreateChat(
-      jobId: jobId,
-      customerId: customerId,
-      providerId: providerId,
-    );
-    setState(() {}); // refresh UI
+    try {
+      final createdChatId = await FirebaseHelper.instance.getOrCreateChat(
+        customerName: widget.customerName,
+        providerName: widget.providerName,
+        jobId: widget.jobId,
+        customerId:
+            (widget.user["role"] == "customer"
+                    ? widget.user["id"]
+                    : widget.currentUserId)
+                .toString(), // ensure string
+        providerId:
+            (widget.user["role"] == "provider"
+                    ? widget.user["id"]
+                    : widget.currentUserId)
+                .toString(), // ensure string
+      );
+
+      if (mounted) {
+        setState(() {
+          chatId = createdChatId.toString(); // ensure string
+          _isChatReady = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Chat setup error: $e");
+    }
   }
 
   void _sendMessage(String text) async {
-    if (text.trim().isEmpty || chatId.isEmpty) return;
+    if (text.trim().isEmpty || chatId == null) return;
 
-    // Firestore pe send
     await FirebaseHelper.instance.sendMessage(
-      chatId: chatId,
-      senderId: customerId, // abhi hardcoded, baad me current user
+      chatId: chatId!,
+      senderId: widget.currentUserId,
+      senderName: widget.user['name']?.toString() ?? "Unknown",
       text: text,
     );
 
@@ -73,28 +102,32 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return MainLayout(
-      title: widget.user['name'],
+      title: widget.user['name']?.toString() ?? "Chat",
       currentIndex: 1,
       isAvatarShow: false,
       showBottomNav: false,
       body:
-          chatId.isEmpty
+          !_isChatReady || chatId == null
               ? const Center(child: CircularProgressIndicator())
               : Column(
                 children: [
+                  // ✅ Messages Area
                   Expanded(
                     child: StreamBuilder<List<Map<String, dynamic>>>(
                       stream: FirebaseHelper.instance.listenMessages(
-                        chatId: chatId,
+                        chatId: chatId!,
                       ),
                       builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Center(
                             child: CircularProgressIndicator(),
                           );
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text("No messages yet"));
                         }
 
                         final messages = snapshot.data!;
@@ -108,11 +141,15 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
                             final message = messages[index];
-                            final isSent = message["senderId"] == customerId;
+                            final isSent =
+                                message["senderId"].toString() ==
+                                widget.currentUserId;
                             final isLastSentMessage =
                                 isSent &&
                                 messages.lastIndexWhere(
-                                      (msg) => msg["senderId"] == customerId,
+                                      (msg) =>
+                                          msg["senderId"].toString() ==
+                                          widget.currentUserId,
                                     ) ==
                                     index;
 
@@ -128,61 +165,67 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     ),
                   ),
 
-                  SizedBox(
-                    width: double.infinity,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(
-                            Icons.camera_alt,
-                            color:
-                                isDark
-                                    ? AppColors.darkText
-                                    : AppColors.lightText,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(
-                            Icons.mic,
-                            color:
-                                isDark
-                                    ? AppColors.darkText
-                                    : AppColors.lightText,
-                          ),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            decoration: InputDecoration(
-                              hintText: "Type a message",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24.r),
-                                borderSide: BorderSide.none,
-                              ),
-                              fillColor:
+                  // ✅ Input Field
+                  SafeArea(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(
+                              Icons.camera_alt,
+                              color:
                                   isDark
-                                      ? AppColors.darkSurface
-                                      : AppColors.lightSurface,
-                              filled: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md.w,
+                                      ? AppColors.darkText
+                                      : AppColors.lightText,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: Icon(
+                              Icons.mic,
+                              color:
+                                  isDark
+                                      ? AppColors.darkText
+                                      : AppColors.lightText,
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              decoration: InputDecoration(
+                                hintText: "Type a message",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24.r),
+                                  borderSide: BorderSide.none,
+                                ),
+                                fillColor:
+                                    isDark
+                                        ? AppColors.darkSurface
+                                        : AppColors.lightSurface,
+                                filled: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md.w,
+                                  vertical: 10.h,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        IconButton(
-                          onPressed: () => _sendMessage(_controller.text),
-                          icon: Icon(
-                            Icons.send,
-                            color:
+                          SizedBox(width: 6.w),
+                          CircleAvatar(
+                            radius: 24.r,
+                            backgroundColor:
                                 isDark
                                     ? AppColors.darkPrimary
                                     : AppColors.lightPrimary,
+                            child: IconButton(
+                              icon: const Icon(Icons.send, color: Colors.white),
+                              onPressed: () => _sendMessage(_controller.text),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -203,67 +246,63 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
     return Align(
       alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment:
-            isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: AppSpacing.xs.h),
-              padding: EdgeInsets.symmetric(
-                vertical: AppSpacing.sm.h,
-                horizontal: AppSpacing.md.w,
-              ),
-              decoration: BoxDecoration(
-                color:
-                    isSent
-                        ? (isDark
-                            ? AppColors.darkPrimary
-                            : AppColors.lightPrimary)
-                        : (isDark
-                            ? AppColors.darkSurface
-                            : AppColors.lightSurface),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12.r),
-                  topRight: Radius.circular(12.r),
-                  bottomLeft: Radius.circular(isSent ? 12.r : 0),
-                  bottomRight: Radius.circular(isSent ? 0 : 12.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 8.w),
+        child: Column(
+          crossAxisAlignment:
+              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            if (!isSent)
+              Padding(
+                padding: EdgeInsets.only(left: 6.w, bottom: 2.h),
+                child: CustomText(
+                  text: message["senderName"]?.toString() ?? "",
+                  size: CustomTextSize.xs,
+                  fontWeight: FontWeight.bold,
+                  color: CustomTextColor.textSecondary,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        isDark
-                            ? Colors.black.withOpacity(0.4)
-                            : Colors.grey.withOpacity(0.3),
-                    blurRadius: 6.r,
-                    spreadRadius: 1.r,
-                    offset: const Offset(2, 3),
+              ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 14.w),
+                decoration: BoxDecoration(
+                  color:
+                      isSent
+                          ? (isDark
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary)
+                          : (isDark ? AppColors.darkSurface : Colors.white),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(14.r),
+                    topRight: Radius.circular(14.r),
+                    bottomLeft: Radius.circular(isSent ? 14.r : 0),
+                    bottomRight: Radius.circular(isSent ? 0 : 14.r),
                   ),
-                ],
-              ),
-              child: CustomText(
-                text: message["text"] ?? "",
-                size: CustomTextSize.base,
-                fontFamily: "Roboto",
-                fontWeight: FontWeight.normal,
-                color:
-                    isSent ? CustomTextColor.alwaysWhite : CustomTextColor.text,
-              ),
-            ),
-          ),
-          if (isLastSentMessage && isSent)
-            Padding(
-              padding: EdgeInsets.only(top: AppSpacing.xs.h),
-              child: CustomText(
-                text: message["read"] == true ? "Seen" : "Sent",
-                size: CustomTextSize.xs,
-                fontFamily: "Roboto",
-                fontWeight: FontWeight.normal,
-                color: CustomTextColor.textSecondary,
+                ),
+                child: CustomText(
+                  text: message["text"]?.toString() ?? "",
+                  size: CustomTextSize.base,
+                  fontFamily: "Roboto",
+                  fontWeight: FontWeight.normal,
+                  color:
+                      isSent
+                          ? CustomTextColor.alwaysWhite
+                          : CustomTextColor.text,
+                ),
               ),
             ),
-        ],
+            if (isLastSentMessage && isSent)
+              Padding(
+                padding: EdgeInsets.only(top: 2.h, right: 6.w),
+                child: CustomText(
+                  text: message["read"] == true ? "Seen" : "Sent",
+                  size: CustomTextSize.xs,
+                  color: CustomTextColor.textSecondary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

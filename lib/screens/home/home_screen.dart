@@ -6,6 +6,7 @@ import 'package:employee_portal/job/job_detail_screen.dart';
 import 'package:employee_portal/layout/main_layout.dart';
 import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/screens/messages/chat_screen.dart';
+import 'package:employee_portal/screens/messages/conversation_screens.dart';
 import 'package:employee_portal/services/api_services.dart';
 import 'package:employee_portal/utils/custom_navigation.dart';
 import 'package:employee_portal/utils/storage_helper.dart';
@@ -245,7 +246,15 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     final job = jobData["job"];
     final service = job["service"];
-    // final customer = jobData["customer"];
+    final customer = jobData["customer"];
+    print("ye job Data h${jobData}");
+    print("ye service wala h${service}");
+    print("ye customer wala h${customer}");
+
+    final userProvider = Provider.of<UserProvider>(context);
+    final provider = userProvider.user['provider'] ?? {};
+
+    print("${provider} check");
 
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -366,9 +375,21 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 CustomButton(
                   text: "Message",
-                  variant: ButtonVariant.outline,
                   onPressed: () {
-                    CustomNavigation.push(context, ChatScreen());
+                    CustomNavigation.push(
+                      context,
+                      ConversationScreen(
+                        user: {
+                          "id": customer["id"],
+                          "name": customer["name"],
+                          "role": "customer",
+                        },
+                        jobId: job["id"].toString(),
+                        currentUserId: provider["id"].toString(),
+                        customerName: customer["name"] ?? "Customer",
+                        providerName: provider["name"] ?? "Provider",
+                      ),
+                    );
                   },
                 ),
                 CustomButton(
