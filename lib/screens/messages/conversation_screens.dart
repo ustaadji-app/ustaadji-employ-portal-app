@@ -7,19 +7,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/custom_text.dart';
 
 class ConversationScreen extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final Map<String, dynamic> customer;
+  final Map<String, dynamic> provider;
   final String jobId;
-  final String currentUserId;
-  final String customerName;
-  final String providerName;
 
   const ConversationScreen({
     super.key,
-    required this.user,
+    required this.customer,
+    required this.provider,
     required this.jobId,
-    required this.currentUserId,
-    required this.customerName,
-    required this.providerName,
   });
 
   @override
@@ -41,27 +37,38 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Future<void> _setupChat() async {
     try {
-      final createdChatId = await FirebaseHelper.instance.getOrCreateChat(
-        customerName: widget.customerName,
-        providerName: widget.providerName,
+      final result = await FirebaseHelper.instance.getOrCreateChat(
+        customerName: widget.customer['name'],
+        providerName: widget.provider['name'],
         jobId: widget.jobId,
-        customerId:
-            (widget.user["role"] == "customer"
-                    ? widget.user["id"]
-                    : widget.currentUserId)
-                .toString(), // ensure string
-        providerId:
-            (widget.user["role"] == "provider"
-                    ? widget.user["id"]
-                    : widget.currentUserId)
-                .toString(), // ensure string
+        customerId: widget.customer['id'],
+        providerId: widget.provider['id'],
+      );
+
+      final createdChatId = result['chatId'];
+      final isNew = result['isNew'] ?? false;
+
+      await FirebaseHelper.instance.markAllMessagesAsRead(
+        chatId: createdChatId,
+        currentUserId: widget.provider['id'],
       );
 
       if (mounted) {
         setState(() {
-          chatId = createdChatId.toString(); // ensure string
+          chatId = createdChatId;
           _isChatReady = true;
         });
+      }
+
+      /// ✅ Send auto message if chat is newly created
+      if (isNew) {
+        await FirebaseHelper.instance.sendMessage(
+          chatId: createdChatId,
+          senderId: widget.provider['id'],
+          senderName: widget.provider['name'],
+          text:
+              "Hi, I have accepted your job request. My name is ${widget.provider['name']}, and I will be there at the scheduled time. If you have any questions or special instructions, feel free to message me here. I’m happy to help!",
+        );
       }
     } catch (e) {
       debugPrint("❌ Chat setup error: $e");
@@ -73,8 +80,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
     await FirebaseHelper.instance.sendMessage(
       chatId: chatId!,
-      senderId: widget.currentUserId,
-      senderName: widget.user['name']?.toString() ?? "Unknown",
+      senderId: widget.provider['id'],
+      senderName: widget.provider['name'],
       text: text,
     );
 
@@ -104,7 +111,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return MainLayout(
-      title: widget.user['name']?.toString() ?? "Chat",
+      title: widget.customer['name'],
       currentIndex: 1,
       isAvatarShow: false,
       showBottomNav: false,
@@ -130,6 +137,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           return const Center(child: Text("No messages yet"));
                         }
 
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          FirebaseHelper.instance.markAllMessagesAsRead(
+                            chatId: chatId!,
+                            currentUserId: widget.provider['id'],
+                          );
+                        }
+
                         final messages = snapshot.data!;
 
                         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -143,13 +157,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
                             final message = messages[index];
                             final isSent =
                                 message["senderId"].toString() ==
-                                widget.currentUserId;
+                                widget.provider['id'];
                             final isLastSentMessage =
                                 isSent &&
                                 messages.lastIndexWhere(
                                       (msg) =>
                                           msg["senderId"].toString() ==
-                                          widget.currentUserId,
+                                          widget.provider['id'],
                                     ) ==
                                     index;
 
@@ -252,16 +266,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
           crossAxisAlignment:
               isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            if (!isSent)
-              Padding(
-                padding: EdgeInsets.only(left: 6.w, bottom: 2.h),
-                child: CustomText(
-                  text: message["senderName"]?.toString() ?? "",
-                  size: CustomTextSize.xs,
-                  fontWeight: FontWeight.bold,
-                  color: CustomTextColor.textSecondary,
-                ),
-              ),
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: Container(

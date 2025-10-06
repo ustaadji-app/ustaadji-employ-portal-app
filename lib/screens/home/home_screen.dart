@@ -5,7 +5,6 @@ import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/job/job_detail_screen.dart';
 import 'package:employee_portal/layout/main_layout.dart';
 import 'package:employee_portal/provider/user_provider.dart';
-import 'package:employee_portal/screens/messages/chat_screen.dart';
 import 'package:employee_portal/screens/messages/conversation_screens.dart';
 import 'package:employee_portal/services/api_services.dart';
 import 'package:employee_portal/utils/custom_navigation.dart';
@@ -374,20 +373,23 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CustomButton(
-                  text: "Message",
+                  text: "Accept",
                   onPressed: () {
+                    print("Navigating to conversation screen");
                     CustomNavigation.push(
                       context,
                       ConversationScreen(
-                        user: {
-                          "id": customer["id"],
-                          "name": customer["name"],
+                        customer: {
+                          "id": customer['id'].toString(),
+                          "name": customer['name'],
                           "role": "customer",
                         },
-                        jobId: job["id"].toString(),
-                        currentUserId: provider["id"].toString(),
-                        customerName: customer["name"] ?? "Customer",
-                        providerName: provider["name"] ?? "Provider",
+                        jobId: job['id'].toString(),
+                        provider: {
+                          "id": provider['id'].toString(),
+                          "name": provider['name'],
+                          "role": "provider",
+                        },
                       ),
                     );
                   },

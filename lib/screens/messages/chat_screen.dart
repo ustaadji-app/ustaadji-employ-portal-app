@@ -96,6 +96,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 final chats = snapshot.data ?? [];
 
+                print(snapshot.data);
+
                 print("ye chats hain ${chats}");
 
                 if (chats.isEmpty) {
@@ -168,8 +170,12 @@ class _ChatScreenState extends State<ChatScreen> {
                       chat['participantDetails'] ?? {},
                     );
 
+                    print(participantDetails);
+
                     final otherUserName =
                         participantDetails[otherUserId] ?? "User";
+
+                    print(otherUserName);
 
                     final isUnread =
                         (chat['lastMessageRead'] == false &&
@@ -181,37 +187,30 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          final jobId = chat['id'].toString();
+                          final jobId = chat['jobId'].toString();
                           final otherUserId = participants.firstWhere(
                             (id) => id != currentUserId,
                             orElse: () => "",
                           );
+
                           final otherUserName =
                               participantDetails[otherUserId] ?? "User";
 
-                          final isProvider =
-                              userProvider.user['provider'] != null;
-
+                          // ✅ Ab ConversationScreen mein same data bhejna jaise HomeScreen se bhej raha tha
                           CustomNavigation.push(
                             context,
                             ConversationScreen(
-                              user:
-                                  isProvider
-                                      ? userProvider.user['provider'] ?? {}
-                                      : userProvider.user['customer'] ?? {},
-
+                              customer: {
+                                "id": otherUserId,
+                                "name": otherUserName,
+                                "role": "customer",
+                              },
+                              provider: {
+                                "id": provider['id'].toString(),
+                                "name": provider['name'] ?? "Provider",
+                                "role": "provider",
+                              },
                               jobId: jobId,
-                              currentUserId: currentUserId,
-
-                              // agar provider login hai to customer ka name otherUserName hoga
-                              customerName:
-                                  isProvider
-                                      ? otherUserName
-                                      : userProvider
-                                              .user['customer']?['name'] ??
-                                          "Customer",
-
-                              providerName: provider['name'],
                             ),
                           );
                         },

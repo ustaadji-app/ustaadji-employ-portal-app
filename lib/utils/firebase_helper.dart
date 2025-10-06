@@ -8,8 +8,7 @@ class FirebaseHelper {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Create or get chat document
-  Future<String> getOrCreateChat({
+  Future<Map<String, dynamic>> getOrCreateChat({
     required String jobId,
     required String customerId,
     required String customerName,
@@ -19,13 +18,19 @@ class FirebaseHelper {
     final chatDoc = _firestore.collection('chats').doc(jobId);
     final snapshot = await chatDoc.get();
 
+    bool isNew = false;
+
     if (!snapshot.exists) {
+      isNew = true;
       await chatDoc.set({
-        'participants': [customerId, providerId], // ✅ ARRAY for easy query
+        'participants': [customerId, providerId],
         'participantDetails': {
           customerId: customerName,
           providerId: providerName,
         },
+
+        'jobId': jobId,
+        'status': true,
         'createdAt': Timestamp.now(),
         'lastMessage': "",
         'lastMessageTime': null,
@@ -33,7 +38,6 @@ class FirebaseHelper {
         'lastMessageRead': true,
       });
     } else {
-      // 🔥 ensure participants & details exist (safety net)
       await chatDoc.set({
         'participants': [customerId, providerId],
         'participantDetails': {
@@ -43,7 +47,7 @@ class FirebaseHelper {
       }, SetOptions(merge: true));
     }
 
-    return chatDoc.id;
+    return {'chatId': chatDoc.id, 'isNew': isNew};
   }
 
   /// Send a message
@@ -122,7 +126,7 @@ class FirebaseHelper {
   Stream<List<Map<String, dynamic>>> getChatsForUser({required String userId}) {
     return _firestore
         .collection('chats')
-        .where('participants', arrayContains: userId) // ✅ easy query
+        .where('participants', arrayContains: userId)
         .orderBy('lastMessageTime', descending: true)
         .snapshots()
         .map(
@@ -131,5 +135,38 @@ class FirebaseHelper {
                   .map((doc) => {...doc.data(), "id": doc.id})
                   .toList(),
         );
+  }
+
+  /// Mark all messages as read when user opens chat
+  Future<void> markAllMessagesAsRead({
+    required String chatId,
+    required String currentUserId,
+  }) async {
+    final chatRef = _firestore.collection('chats').doc(chatId);
+
+    final unreadMessages =
+        await chatRef
+            .collection('messages')
+            .where("senderId", isNotEqualTo: currentUserId)
+            .where("read", isEqualTo: false)
+            .get();
+
+    final batch = _firestore.batch();
+
+    for (var doc in unreadMessages.docs) {
+      batch.update(doc.reference, {"read": true});
+    }
+
+    // ✅ agar lastMessage usi dusre user ka hai aur abhi unread hai → usko bhi mark read
+    final chatSnapshot = await chatRef.get();
+    if (chatSnapshot.exists) {
+      final data = chatSnapshot.data()!;
+      if (data["lastMessageSenderId"] != currentUserId &&
+          data["lastMessageRead"] == false) {
+        batch.update(chatRef, {"lastMessageRead": true});
+      }
+    }
+
+    await batch.commit();
   }
 }

@@ -1,12 +1,15 @@
 import 'package:employee_portal/constants/app_colors.dart';
 import 'package:employee_portal/constants/app_spacing.dart';
 import 'package:employee_portal/layout/main_layout.dart';
+import 'package:employee_portal/provider/user_provider.dart';
 import 'package:employee_portal/screens/messages/chat_screen.dart';
+import 'package:employee_portal/screens/messages/conversation_screens.dart';
 import 'package:employee_portal/utils/custom_navigation.dart';
 import 'package:employee_portal/widgets/custom_button.dart';
 import 'package:employee_portal/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 class JobDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> jobData;
@@ -20,7 +23,14 @@ class JobDetailsScreen extends StatelessWidget {
     final service = job["service"];
     final jobCategories = job["job_categories"] ?? [];
 
+    final userProvider = Provider.of<UserProvider>(context);
+    final provider = userProvider.user['provider'] ?? {};
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    print("job details sai customer ka data $customer");
+    print("job details sai provider ka data $provider");
+    print("job details sai job ka data $job");
 
     return MainLayout(
       title: "Job Details",
@@ -185,7 +195,23 @@ class JobDetailsScreen extends StatelessWidget {
               child: CustomButton(
                 text: "Accept",
                 onPressed: () {
-                  CustomNavigation.push(context, const ChatScreen());
+                  print("Navigating to conversation screen");
+                  CustomNavigation.push(
+                    context,
+                    ConversationScreen(
+                      customer: {
+                        "id": customer['id'].toString(),
+                        "name": customer['name'],
+                        "role": "customer",
+                      },
+                      jobId: job['id'].toString(),
+                      provider: {
+                        "id": provider['id'].toString(),
+                        "name": provider['name'],
+                        "role": "provider",
+                      },
+                    ),
+                  );
                 },
               ),
             ),
