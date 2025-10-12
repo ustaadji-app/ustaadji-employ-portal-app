@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.ustaadji.pk.app"
+    namespace = "com.ustaadji.employ.portal.pk.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -22,7 +22,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ustaadji.pk.app"
+        applicationId = "com.ustaadji.employ.portal.pk.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

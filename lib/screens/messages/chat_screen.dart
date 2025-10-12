@@ -196,7 +196,6 @@ class _ChatScreenState extends State<ChatScreen> {
                           final otherUserName =
                               participantDetails[otherUserId] ?? "User";
 
-                          // ✅ Ab ConversationScreen mein same data bhejna jaise HomeScreen se bhej raha tha
                           CustomNavigation.push(
                             context,
                             ConversationScreen(

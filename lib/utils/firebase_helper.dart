@@ -15,12 +15,15 @@ class FirebaseHelper {
     required String providerId,
     required String providerName,
   }) async {
-    final chatDoc = _firestore.collection('chats').doc(jobId);
+    // ✅ Unique chat ID (job + provider + customer)
+    final chatId = "${jobId}_${providerId}_$customerId";
+    final chatDoc = _firestore.collection('chats').doc(chatId);
     final snapshot = await chatDoc.get();
 
     bool isNew = false;
 
     if (!snapshot.exists) {
+      // ✅ Only create new chat if not exists
       isNew = true;
       await chatDoc.set({
         'participants': [customerId, providerId],
@@ -28,8 +31,8 @@ class FirebaseHelper {
           customerId: customerName,
           providerId: providerName,
         },
-
         'jobId': jobId,
+        'chatId': chatId,
         'status': true,
         'createdAt': Timestamp.now(),
         'lastMessage': "",
@@ -37,17 +40,28 @@ class FirebaseHelper {
         'lastMessageSenderId': null,
         'lastMessageRead': true,
       });
-    } else {
-      await chatDoc.set({
-        'participants': [customerId, providerId],
-        'participantDetails': {
-          customerId: customerName,
-          providerId: providerName,
-        },
-      }, SetOptions(merge: true));
     }
 
+    // ✅ Just return existing doc info (no update if already exists)
     return {'chatId': chatDoc.id, 'isNew': isNew};
+  }
+
+  Future<DocumentSnapshot?> findChatByParticipants({
+    required String jobId,
+    required String customerId,
+    required String providerId,
+  }) async {
+    final query =
+        await _firestore
+            .collection('chats')
+            .where('jobId', isEqualTo: jobId)
+            .where('participants', arrayContainsAny: [customerId, providerId])
+            .get();
+
+    if (query.docs.isEmpty) return null;
+
+    // Normally 1 chat per job
+    return query.docs.first;
   }
 
   /// Send a message
@@ -157,7 +171,6 @@ class FirebaseHelper {
       batch.update(doc.reference, {"read": true});
     }
 
-    // ✅ agar lastMessage usi dusre user ka hai aur abhi unread hai → usko bhi mark read
     final chatSnapshot = await chatRef.get();
     if (chatSnapshot.exists) {
       final data = chatSnapshot.data()!;

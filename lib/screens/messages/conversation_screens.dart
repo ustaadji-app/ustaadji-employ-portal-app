@@ -28,6 +28,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   String? chatId;
   bool _isChatReady = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -35,19 +36,62 @@ class _ConversationScreenState extends State<ConversationScreen> {
     _setupChat();
   }
 
-  Future<void> _setupChat() async {
+  Future<void> _initializeChat() async {
     try {
-      final result = await FirebaseHelper.instance.getOrCreateChat(
-        customerName: widget.customer['name'],
-        providerName: widget.provider['name'],
+      // 🔍 Check if chat exists for this job and both participants
+      final existingChat = await FirebaseHelper.instance.findChatByParticipants(
         jobId: widget.jobId,
         customerId: widget.customer['id'],
         providerId: widget.provider['id'],
       );
 
-      final createdChatId = result['chatId'];
-      final isNew = result['isNew'] ?? false;
+      if (existingChat == null) {
+        debugPrint(
+          "⚠️ No existing chat found for this job. It should be created by provider.",
+        );
+      } else {
+        await FirebaseHelper.instance.markAllMessagesAsRead(
+          chatId: existingChat.id,
+          currentUserId: widget.customer['id'],
+        );
+      }
 
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint("❌ Error initializing chat: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _setupChat() async {
+    try {
+      // ✅ Step 1: Check if chat already exists
+      final existingChat = await FirebaseHelper.instance.findChatByParticipants(
+        jobId: widget.jobId,
+        customerId: widget.customer['id'],
+        providerId: widget.provider['id'],
+      );
+
+      String createdChatId;
+      bool isNew = false;
+
+      if (existingChat != null) {
+        // Chat mil gayi → use karo
+        createdChatId = existingChat.id;
+      } else {
+        // ✅ Step 2: Chat nahi mili → create nayi
+        final result = await FirebaseHelper.instance.getOrCreateChat(
+          customerName: widget.customer['name'],
+          providerName: widget.provider['name'],
+          jobId: widget.jobId,
+          customerId: widget.customer['id'],
+          providerId: widget.provider['id'],
+        );
+        createdChatId = result['chatId'];
+        isNew = result['isNew'] ?? false;
+      }
+
+      // ✅ Mark all messages as read for provider
       await FirebaseHelper.instance.markAllMessagesAsRead(
         chatId: createdChatId,
         currentUserId: widget.provider['id'],
@@ -60,7 +104,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         });
       }
 
-      /// ✅ Send auto message if chat is newly created
+      // ✅ Send auto message only if new chat created
       if (isNew) {
         await FirebaseHelper.instance.sendMessage(
           chatId: createdChatId,

@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:256482633044:android:a39bd8a75f38e88e71d4c1",
+        "android_client_info": {
+          "package_name": "com.ustaadji.employ.portal.pk.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKMtfSDPM4mIqf8efEh-aGUAwjMyjbgIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:256482633044:android:93942b7ed8a1b98a71d4c1",
         "android_client_info": {
           "package_name": "com.ustaadji.pk.app"
